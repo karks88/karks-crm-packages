@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Karks CRM Packages
  * Description: Track maintenance-package hour allotments and usage for Karks CRM customers, with a client-shareable PDF usage report.
- * Version: 1.0.0
+ * Version: 1.0.1
  * Author: Eric Karkovack
  * Author URI: https://karks.com
  * Text Domain: karks-crm-packages
@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'KCRMPKG_VERSION', '1.0.0' );
+define( 'KCRMPKG_VERSION', '1.0.1' );
 define( 'KCRMPKG_DB_VERSION', '1.1.0' );
 define( 'KCRMPKG_PLUGIN_FILE', __FILE__ );
 define( 'KCRMPKG_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
@@ -60,6 +60,7 @@ function kcrmpkg_run() {
 	require_once KCRMPKG_PLUGIN_DIR . 'includes/models/class-kcrmpkg-usage.php';
 	require_once KCRMPKG_PLUGIN_DIR . 'includes/controllers/class-kcrmpkg-controller-base.php';
 	require_once KCRMPKG_PLUGIN_DIR . 'includes/admin/class-kcrmpkg-admin-packages.php';
+	require_once KCRMPKG_PLUGIN_DIR . 'includes/front/class-kcrmpkg-front-usage.php';
 	require_once KCRMPKG_PLUGIN_DIR . 'includes/integration/class-kcrmpkg-customer-section.php';
 	require_once KCRMPKG_PLUGIN_DIR . 'includes/pdf/class-kcrmpkg-pdf.php';
 
@@ -78,6 +79,9 @@ function kcrmpkg_run() {
 
 	$customer_section = new KCRM_Pkg_Customer_Section();
 	add_action( 'kcrm_customer_edit_after_sections', array( $customer_section, 'render' ), 10, 2 );
+
+	$front_usage = new KCRM_Pkg_Front_Usage();
+	add_action( 'template_redirect', array( $front_usage, 'handle_actions' ) );
 }
 add_action( 'plugins_loaded', 'kcrmpkg_run' );
 
