@@ -32,7 +32,8 @@ core, nothing else:
 * `KCRM_Colors::get()` and `KCRM_Company::pdf_accent_color()` -- so the PDF report matches Karks CRM's own invoice PDF styling.
 * `KCRM_PDF::logo_data_uri( $company )` -- reuses the exact same logo-rendering logic as the invoice PDF.
 * `\Dompdf\Dompdf` -- via Karks CRM's already-loaded Composer autoloader; this plugin does not vendor its own copy.
-* The `kcrm_customer_edit_after_sections` action -- the one hook Karks CRM exposes, used to render the "Packages" summary box (and, front-end only, the usage log + "Log Usage" form) on the customer edit screen, both wp-admin and the front-end `/crm/` screen.
+* The `kcrm_customer_edit_after_sections` action -- renders the "Packages" summary box on the wp-admin customer edit screen (that screen has no tabs).
+* The `kcrm_customer_profile_tabs` filter -- contributes a "Packages" tab (summary, usage log, and "Log Usage" form) to the front-end `/crm/` customer profile screen.
 * `KCRM_Front::is_crm_page()` and `KCRM_Front::endpoint_url()` -- so the front-end "Log Usage" / "Delete Usage" submissions are recognized and redirect back to the right front-end customer URL, matching the front-end's own `.kcrm-front-table` / `.kcrm-front-form` styling.
 
 It deliberately does not touch `KCRM_Controller_Base`, `KCRM_Admin_Screen_Trait`,
@@ -48,6 +49,9 @@ usage), never cached, matching Karks CRM's own precedent for balance-due
 calculations.
 
 == Changelog ==
+
+= 1.0.2 =
+* The front-end "Packages" section is now its own "Packages" tab on the customer profile, matching Karks CRM's newly tabbed front-end customer profile (Home / Jobs / Invoices & Payments), via the new `kcrm_customer_profile_tabs` filter. Requires Karks CRM 0.9.5 or later. The wp-admin customer screen is unaffected -- it still shows the same read-only summary as before.
 
 = 1.0.1 =
 * Added front-end usage logging: the "Packages" summary box on the

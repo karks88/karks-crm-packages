@@ -96,6 +96,7 @@ class KCRM_Pkg_Front_Usage {
 				array(
 					'view'               => 'edit',
 					'id'                 => $package->customer_id,
+					'tab'                => 'packages',
 					'kcrmpkg_package_id' => $package->id,
 					'kcrmpkg_notice'     => $notice,
 				)

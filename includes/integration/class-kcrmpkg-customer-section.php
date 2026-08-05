@@ -4,32 +4,83 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Renders a compact "Packages" summary box on the customer edit screen --
- * both wp-admin and the front-end /crm/ screen, since karks-crm fires
- * kcrm_customer_edit_after_sections in both. This is the only file in this
- * add-on that touches core's hook.
+ * Renders "Packages" for a customer into karks-crm's customer-edit screen,
+ * via two different karks-crm extension points depending on context:
  *
- * On the front end only, it also renders a package's usage log plus a "Log
- * Usage" form inline, so staff can log hours without needing wp-admin
- * access -- full package create/edit (allotted hours, price, billing
- * period) stays wp-admin-only via the "Manage Packages" link below.
- * Submissions are handled by KCRM_Pkg_Front_Usage.
+ * - wp-admin: `kcrm_customer_edit_after_sections` (the customer screen
+ *   there has no tabs) -- a read-only summary + a link to the full admin
+ *   screen. render() is a no-op on the front end now that it has its own
+ *   tab below, so this hook still fires there (karks-crm fires it in both
+ *   contexts) without double-rendering anything.
+ * - front end: `kcrm_customer_profile_tabs`, contributing a "Packages" tab
+ *   that additionally renders the usage log and "Log Usage" form inline,
+ *   so staff can log hours without needing wp-admin access -- full package
+ *   create/edit (allotted hours, price, billing period) stays
+ *   wp-admin-only via the "Manage Packages" link in both places.
+ *   Submissions are handled by KCRM_Pkg_Front_Usage.
  */
 class KCRM_Pkg_Customer_Section {
 
 	/**
+	 * Listener for `kcrm_customer_edit_after_sections`. wp-admin only --
+	 * the front end gets the same information via its own tab instead
+	 * (see register_tab()).
+	 *
 	 * @param object $customer   The KCRM_Customer row being viewed.
 	 * @param array  $rollup_ids The customer's own id plus any Job ids rolled up under it.
 	 */
 	public function render( $customer, $rollup_ids ) {
-		$packages = KCRM_Pkg_Package::for_customers( $rollup_ids );
-
-		echo '<h2>' . esc_html__( 'Packages', 'karks-crm-packages' ) . '</h2>';
-
 		if ( ! is_admin() ) {
-			$this->render_front_notice();
+			return;
 		}
 
+		echo '<h2>' . esc_html__( 'Packages', 'karks-crm-packages' ) . '</h2>';
+		$this->render_summary( KCRM_Pkg_Package::for_customers( $rollup_ids ), $customer, false );
+	}
+
+	/**
+	 * Listener for karks-crm's `kcrm_customer_profile_tabs` filter -- adds
+	 * a "Packages" tab to the front-end customer profile screen.
+	 *
+	 * @param array  $tabs       tab_slug => array( 'label', 'badge', 'render' ).
+	 * @param object $customer   The KCRM_Customer row being viewed.
+	 * @param array  $rollup_ids The customer's own id plus any Job ids rolled up under it.
+	 * @return array
+	 */
+	public function register_tab( $tabs, $customer, $rollup_ids ) {
+		$tabs['packages'] = array(
+			'label'  => __( 'Packages', 'karks-crm-packages' ),
+			'render' => function () use ( $customer, $rollup_ids ) {
+				$this->render_front_tab( $customer, $rollup_ids );
+			},
+		);
+		return $tabs;
+	}
+
+	/** Front-end "Packages" tab content: the summary, plus (if any packages exist) the usage log + "Log Usage" form. */
+	private function render_front_tab( $customer, $rollup_ids ) {
+		$packages = KCRM_Pkg_Package::for_customers( $rollup_ids );
+
+		echo '<h3>' . esc_html__( 'Packages', 'karks-crm-packages' ) . '</h3>';
+
+		$this->render_front_notice();
+		$this->render_summary( $packages, $customer, true );
+
+		if ( ! empty( $packages ) ) {
+			$this->render_front_usage_section( $customer, $packages );
+		}
+	}
+
+	/**
+	 * The summary cards + packages table + "Manage Packages" link -- shared
+	 * by the wp-admin summary and the front-end tab, which differ only in
+	 * whether the table gets a "Log Usage" action column.
+	 *
+	 * @param object[] $packages KCRM_Pkg_Package rows.
+	 * @param object   $customer The KCRM_Customer row being viewed.
+	 * @param bool     $is_front Whether this is rendering into the front-end tab (adds the per-row "Log Usage" link/column).
+	 */
+	private function render_summary( array $packages, $customer, $is_front ) {
 		if ( empty( $packages ) ) {
 			echo '<p>' . esc_html__( 'No maintenance packages yet.', 'karks-crm-packages' ) . '</p>';
 		} else {
@@ -55,13 +106,13 @@ class KCRM_Pkg_Customer_Section {
 					<span class="kcrm-card-label"><?php esc_html_e( 'Hours Remaining', 'karks-crm-packages' ); ?></span>
 				</div>
 			</div>
-			<table class="<?php echo esc_attr( is_admin() ? 'wp-list-table widefat fixed striped' : 'kcrm-front-table' ); ?>" <?php echo is_admin() ? 'style="max-width:700px;"' : ''; ?>>
+			<table class="<?php echo esc_attr( $is_front ? 'kcrm-front-table' : 'wp-list-table widefat fixed striped' ); ?>" <?php echo $is_front ? '' : 'style="max-width:700px;"'; ?>>
 				<thead>
 					<tr>
 						<th><?php esc_html_e( 'Service', 'karks-crm-packages' ); ?></th>
 						<th><?php esc_html_e( 'Remaining', 'karks-crm-packages' ); ?></th>
 						<th><?php esc_html_e( 'Status', 'karks-crm-packages' ); ?></th>
-						<?php if ( ! is_admin() ) : ?>
+						<?php if ( $is_front ) : ?>
 							<th></th>
 						<?php endif; ?>
 					</tr>
@@ -82,8 +133,8 @@ class KCRM_Pkg_Customer_Section {
 								<?php endif; ?>
 							</td>
 							<td><?php echo esc_html( $statuses[ $package->status ] ?? $package->status ); ?></td>
-							<?php if ( ! is_admin() ) : ?>
-								<td><a href="<?php echo esc_url( KCRM_Front::endpoint_url( 'customers', array( 'view' => 'edit', 'id' => $customer->id, 'kcrmpkg_package_id' => $package->id ) ) ); ?>#kcrmpkg-usage"><?php esc_html_e( 'Log Usage', 'karks-crm-packages' ); ?></a></td>
+							<?php if ( $is_front ) : ?>
+								<td><a href="<?php echo esc_url( KCRM_Front::endpoint_url( 'customers', array( 'view' => 'edit', 'id' => $customer->id, 'tab' => 'packages', 'kcrmpkg_package_id' => $package->id ) ) ); ?>#kcrmpkg-usage"><?php esc_html_e( 'Log Usage', 'karks-crm-packages' ); ?></a></td>
 							<?php endif; ?>
 						</tr>
 					<?php endforeach; ?>
@@ -97,10 +148,6 @@ class KCRM_Pkg_Customer_Section {
 			esc_url( add_query_arg( array( 'page' => 'karks-crm-packages', 'customer_id' => $customer->id ), admin_url( 'admin.php' ) ) ),
 			esc_html__( 'Manage Packages', 'karks-crm-packages' )
 		);
-
-		if ( ! is_admin() && ! empty( $packages ) ) {
-			$this->render_front_usage_section( $customer, $packages );
-		}
 	}
 
 	/** Shows a notice for the redirect-back kcrmpkg_notice query arg set by KCRM_Pkg_Front_Usage. */
@@ -148,7 +195,7 @@ class KCRM_Pkg_Customer_Section {
 			$package = $packages[0];
 		}
 
-		$screen_url = KCRM_Front::endpoint_url( 'customers', array( 'view' => 'edit', 'id' => $customer->id ) );
+		$screen_url = KCRM_Front::endpoint_url( 'customers', array( 'view' => 'edit', 'id' => $customer->id, 'tab' => 'packages' ) );
 		$entries    = KCRM_Pkg_Usage::for_package( $package->id );
 		$service    = $package->service_id ? KCRM_Service::find( $package->service_id ) : null;
 		?>
