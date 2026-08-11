@@ -50,6 +50,11 @@ calculations.
 
 == Changelog ==
 
+= 1.0.3 =
+* Packages now auto-expire: a daily background check flips "Active" packages to "Expired" once their period end date has passed. "Cancelled" and "Exhausted" packages are left alone, since those are deliberate manual states.
+* Added a "Download PDF Report" button to the front-end "Packages" tab, so staff can generate the client-shareable usage report without wp-admin access.
+* The wp-admin Packages screen title now shows the customer's name when viewing a customer-scoped package list or editing one of their packages.
+
 = 1.0.2 =
 * The front-end "Packages" section is now its own "Packages" tab on the customer profile, matching Karks CRM's newly tabbed front-end customer profile (Home / Jobs / Invoices & Payments), via the new `kcrm_customer_profile_tabs` filter. Requires Karks CRM 0.9.5 or later. The wp-admin customer screen is unaffected -- it still shows the same read-only summary as before.
 

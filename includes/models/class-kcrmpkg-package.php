@@ -85,4 +85,31 @@ class KCRM_Pkg_Package extends KCRM_Model_Base {
 		$data['updated_at'] = current_time( 'mysql' );
 		return self::update( $id, $data );
 	}
+
+	/**
+	 * Auto-expires 'active' packages whose period_end has passed. Run daily
+	 * by the kcrmpkg_expire_packages cron event (scheduled/cleared by
+	 * KCRM_Pkg_Activator). A bulk conditional UPDATE rather than
+	 * find-then-loop, since KCRM_Model_Base::update() only does single rows
+	 * by id. Deliberately scoped to 'active' only -- 'cancelled' and
+	 * 'exhausted' are deliberate manual states this shouldn't overwrite.
+	 *
+	 * @return int Number of packages expired.
+	 */
+	public static function expire_due() {
+		global $wpdb;
+		$table = self::table();
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared -- bulk conditional UPDATE; query text is built from %i/%s placeholders only, filled in via $wpdb->prepare() on the same line.
+		return (int) $wpdb->query(
+			$wpdb->prepare(
+				'UPDATE %i SET status = %s, updated_at = %s WHERE status = %s AND period_end IS NOT NULL AND period_end < %s',
+				$table,
+				self::STATUS_EXPIRED,
+				current_time( 'mysql' ),
+				self::STATUS_ACTIVE,
+				current_time( 'Y-m-d' )
+			)
+		);
+	}
 }

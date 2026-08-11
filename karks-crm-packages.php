@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Karks CRM Packages
  * Description: Track maintenance-package hour allotments and usage for Karks CRM customers, with a client-shareable PDF usage report.
- * Version: 1.0.2
+ * Version: 1.0.3
  * Author: Eric Karkovack
  * Author URI: https://karks.com
  * Text Domain: karks-crm-packages
@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'KCRMPKG_VERSION', '1.0.2' );
+define( 'KCRMPKG_VERSION', '1.0.3' );
 define( 'KCRMPKG_DB_VERSION', '1.1.0' );
 define( 'KCRMPKG_PLUGIN_FILE', __FILE__ );
 define( 'KCRMPKG_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
@@ -30,6 +30,7 @@ require_once KCRMPKG_PLUGIN_DIR . 'includes/class-kcrmpkg-db.php';
 require_once KCRMPKG_PLUGIN_DIR . 'includes/class-kcrmpkg-activator.php';
 
 register_activation_hook( __FILE__, array( 'KCRM_Pkg_Activator', 'activate' ) );
+register_deactivation_hook( __FILE__, array( 'KCRM_Pkg_Activator', 'deactivate' ) );
 
 /**
  * Boot the add-on. Everything below requires karks-crm's own classes
@@ -65,6 +66,11 @@ function kcrmpkg_run() {
 	require_once KCRMPKG_PLUGIN_DIR . 'includes/pdf/class-kcrmpkg-pdf.php';
 
 	add_action( 'init', array( 'KCRM_Pkg_Activator', 'maybe_upgrade' ), 20 );
+	// Registering the callback here (inside this class_exists-guarded function) rather
+	// than unconditionally means that if karks-crm is later deactivated, the cron event
+	// still fires on schedule but has nothing hooked to it -- a harmless no-op, same
+	// graceful-degrade behavior as the rest of this plugin.
+	add_action( KCRM_Pkg_Activator::EXPIRE_CRON_HOOK, array( 'KCRM_Pkg_Package', 'expire_due' ) );
 
 	$admin_packages = new KCRM_Pkg_Admin_Packages();
 	// Priority 20: add_submenu_page() needs karks-crm's own add_menu_page('karks-crm', ...)

@@ -265,6 +265,12 @@ class KCRM_Pkg_Customer_Section {
 			</p>
 			<p><button type="submit" class="kcrm-button kcrm-button-primary"><?php esc_html_e( 'Log Usage', 'karks-crm-packages' ); ?></button></p>
 		</form>
+
+		<p>
+			<a class="kcrm-button" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=kcrmpkg_download_package_pdf&id=' . $package->id ), 'kcrmpkg_download_package_pdf_' . $package->id ) ); ?>">
+				<?php esc_html_e( 'Download PDF Report', 'karks-crm-packages' ); ?>
+			</a>
+		</p>
 		<?php
 	}
 }

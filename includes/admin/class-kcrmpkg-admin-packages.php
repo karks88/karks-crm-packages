@@ -52,9 +52,14 @@ class KCRM_Pkg_Admin_Packages extends KCRM_Pkg_Controller_Base {
 
 	public function render() {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only view-routing param, no state change.
-		$view = isset( $_GET['view'] ) ? sanitize_key( $_GET['view'] ) : 'list';
+		$view     = isset( $_GET['view'] ) ? sanitize_key( $_GET['view'] ) : 'list';
+		$customer = $this->title_customer( $view );
 
-		echo '<div class="wrap kcrmpkg-wrap"><h1 class="wp-heading-inline">' . esc_html__( 'Packages', 'karks-crm-packages' ) . '</h1>';
+		echo '<div class="wrap kcrmpkg-wrap"><h1 class="wp-heading-inline">' . esc_html__( 'Packages', 'karks-crm-packages' );
+		if ( $customer ) {
+			echo ': ' . esc_html( KCRM_Customer::display_name( $customer ) );
+		}
+		echo '</h1>';
 		if ( 'list' === $view ) {
 			printf( ' <a href="%s" class="page-title-action">%s</a>', esc_url( $this->screen_url( array( 'view' => 'add' ) ) ), esc_html__( 'Add New', 'karks-crm-packages' ) );
 		}
@@ -74,6 +79,24 @@ class KCRM_Pkg_Admin_Packages extends KCRM_Pkg_Controller_Base {
 		}
 
 		echo '</div>';
+	}
+
+	/**
+	 * The customer to name in the page title, if the current view is scoped to one:
+	 * the `customer_id` list/add filter, or (on edit) the package's own customer.
+	 */
+	private function title_customer( $view ) {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only display param, no state change.
+		$customer_id = isset( $_GET['customer_id'] ) ? absint( $_GET['customer_id'] ) : 0;
+
+		if ( ! $customer_id && 'edit' === $view ) {
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only display param, no state change.
+			$id          = isset( $_GET['id'] ) ? absint( $_GET['id'] ) : 0;
+			$package     = $id ? KCRM_Pkg_Package::find( $id ) : null;
+			$customer_id = $package ? (int) $package->customer_id : 0;
+		}
+
+		return $customer_id ? KCRM_Customer::find( $customer_id ) : null;
 	}
 
 	private function render_list() {

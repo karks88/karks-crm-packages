@@ -4,13 +4,22 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Creates/updates this add-on's own database tables on activation.
+ * Creates/updates this add-on's own database tables on activation, and
+ * schedules/clears the daily cron event that auto-expires packages
+ * (see KCRM_Pkg_Package::expire_due()).
  */
 class KCRM_Pkg_Activator {
+
+	const EXPIRE_CRON_HOOK = 'kcrmpkg_expire_packages';
 
 	public static function activate() {
 		self::create_tables();
 		add_option( 'kcrmpkg_db_version', KCRMPKG_DB_VERSION );
+		self::schedule_cron();
+	}
+
+	public static function deactivate() {
+		wp_clear_scheduled_hook( self::EXPIRE_CRON_HOOK );
 	}
 
 	public static function maybe_upgrade() {
@@ -18,6 +27,17 @@ class KCRM_Pkg_Activator {
 			self::create_tables();
 			self::drop_label_column_if_exists();
 			update_option( 'kcrmpkg_db_version', KCRMPKG_DB_VERSION );
+		}
+
+		// Self-heal for installs that were already active before this cron
+		// event existed -- activate() only runs on (re)activation, not on
+		// a plain plugin-file update, so it can't be relied on alone.
+		self::schedule_cron();
+	}
+
+	private static function schedule_cron() {
+		if ( ! wp_next_scheduled( self::EXPIRE_CRON_HOOK ) ) {
+			wp_schedule_event( time(), 'daily', self::EXPIRE_CRON_HOOK );
 		}
 	}
 
