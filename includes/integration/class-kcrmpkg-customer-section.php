@@ -48,8 +48,16 @@ class KCRM_Pkg_Customer_Section {
 	 * @return array
 	 */
 	public function register_tab( $tabs, $customer, $rollup_ids ) {
+		$active_count = 0;
+		foreach ( KCRM_Pkg_Package::for_customers( $rollup_ids ) as $package ) {
+			if ( KCRM_Pkg_Package::STATUS_ACTIVE === $package->status ) {
+				$active_count++;
+			}
+		}
+
 		$tabs['packages'] = array(
 			'label'  => __( 'Packages', 'karks-crm-packages' ),
+			'badge'  => $active_count ?: null,
 			'render' => function () use ( $customer, $rollup_ids ) {
 				$this->render_front_tab( $customer, $rollup_ids );
 			},

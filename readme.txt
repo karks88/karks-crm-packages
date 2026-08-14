@@ -50,6 +50,9 @@ calculations.
 
 == Changelog ==
 
+= 1.0.4 =
+* The front-end "Packages" tab now shows a count badge for active packages, matching Karks CRM's own "Jobs" and "Invoices & Payments" tab badges.
+
 = 1.0.3 =
 * Packages now auto-expire: a daily background check flips "Active" packages to "Expired" once their period end date has passed. "Cancelled" and "Exhausted" packages are left alone, since those are deliberate manual states.
 * Added a "Download PDF Report" button to the front-end "Packages" tab, so staff can generate the client-shareable usage report without wp-admin access.
