@@ -48,16 +48,11 @@ class KCRM_Pkg_Customer_Section {
 	 * @return array
 	 */
 	public function register_tab( $tabs, $customer, $rollup_ids ) {
-		$active_count = 0;
-		foreach ( KCRM_Pkg_Package::for_customers( $rollup_ids ) as $package ) {
-			if ( KCRM_Pkg_Package::STATUS_ACTIVE === $package->status ) {
-				$active_count++;
-			}
-		}
+		list( $current ) = $this->split_by_archive_status( KCRM_Pkg_Package::for_customers( $rollup_ids ) );
 
 		$tabs['packages'] = array(
 			'label'  => __( 'Packages', 'karks-crm-packages' ),
-			'badge'  => $active_count ?: null,
+			'badge'  => count( $current ) ?: null,
 			'render' => function () use ( $customer, $rollup_ids ) {
 				$this->render_front_tab( $customer, $rollup_ids );
 			},
@@ -65,17 +60,50 @@ class KCRM_Pkg_Customer_Section {
 		return $tabs;
 	}
 
-	/** Front-end "Packages" tab content: the summary, plus (if any packages exist) the usage log + "Log Usage" form. */
+	/**
+	 * Splits a customer's packages into "current" (active/exhausted -- still
+	 * relevant to today) and "archived" (expired/cancelled -- history), so
+	 * the front-end tab can show them as two distinct sections instead of
+	 * mixing past packages in with the client's current one.
+	 *
+	 * @param object[] $packages KCRM_Pkg_Package rows.
+	 * @return array{0: object[], 1: object[]} array( $current, $archived ).
+	 */
+	private function split_by_archive_status( array $packages ) {
+		$archived_statuses = array( KCRM_Pkg_Package::STATUS_EXPIRED, KCRM_Pkg_Package::STATUS_CANCELLED );
+
+		$current  = array();
+		$archived = array();
+		foreach ( $packages as $package ) {
+			if ( in_array( $package->status, $archived_statuses, true ) ) {
+				$archived[] = $package;
+			} else {
+				$current[] = $package;
+			}
+		}
+		return array( $current, $archived );
+	}
+
+	/** Front-end "Packages" tab content: current packages + usage log, and a collapsed package history for expired/cancelled ones. */
 	private function render_front_tab( $customer, $rollup_ids ) {
-		$packages = KCRM_Pkg_Package::for_customers( $rollup_ids );
+		list( $current, $archived ) = $this->split_by_archive_status( KCRM_Pkg_Package::for_customers( $rollup_ids ) );
 
 		echo '<h3>' . esc_html__( 'Packages', 'karks-crm-packages' ) . '</h3>';
 
 		$this->render_front_notice();
-		$this->render_summary( $packages, $customer, true );
 
-		if ( ! empty( $packages ) ) {
-			$this->render_front_usage_section( $customer, $packages );
+		if ( empty( $current ) && ! empty( $archived ) ) {
+			echo '<p>' . esc_html__( 'No active packages. See package history below.', 'karks-crm-packages' ) . '</p>';
+		} else {
+			$this->render_summary( $current, $customer, true );
+		}
+
+		if ( ! empty( $current ) ) {
+			$this->render_front_usage_section( $customer, $current );
+		}
+
+		if ( ! empty( $archived ) ) {
+			$this->render_archive_section( $archived );
 		}
 	}
 
@@ -279,6 +307,59 @@ class KCRM_Pkg_Customer_Section {
 				<?php esc_html_e( 'Download PDF Report', 'karks-crm-packages' ); ?>
 			</a>
 		</p>
+		<?php
+	}
+
+	/**
+	 * Front-end-only: a collapsed "Package History" list of expired/cancelled
+	 * packages, kept out of the current-packages summary above. No "Log
+	 * Usage" action here -- archived packages aren't logged against anymore
+	 * -- but each row still links to its PDF report so past years stay
+	 * accessible.
+	 *
+	 * @param object[] $archived KCRM_Pkg_Package rows, already known non-empty by the caller.
+	 */
+	private function render_archive_section( array $archived ) {
+		$statuses = KCRM_Pkg_Package::statuses();
+		?>
+		<details class="kcrmpkg-archive" style="margin-top:48px;">
+			<summary style="cursor:pointer;"><?php esc_html_e( 'Package History', 'karks-crm-packages' ); ?> (<?php echo esc_html( count( $archived ) ); ?>)</summary>
+			<table class="kcrm-front-table">
+				<thead>
+					<tr>
+						<th><?php esc_html_e( 'Service', 'karks-crm-packages' ); ?></th>
+						<th><?php esc_html_e( 'Period', 'karks-crm-packages' ); ?></th>
+						<th><?php esc_html_e( 'Remaining', 'karks-crm-packages' ); ?></th>
+						<th><?php esc_html_e( 'Status', 'karks-crm-packages' ); ?></th>
+						<th></th>
+					</tr>
+				</thead>
+				<tbody>
+					<?php foreach ( $archived as $package ) : ?>
+						<?php
+						$remaining = round( (float) $package->allotted_hours - KCRM_Pkg_Usage::hours_logged( $package->id ), 2 );
+						$service   = $package->service_id ? KCRM_Service::find( $package->service_id ) : null;
+						?>
+						<tr>
+							<td><?php echo esc_html( $service ? $service->name : __( '(unknown service)', 'karks-crm-packages' ) ); ?></td>
+							<td>
+								<?php echo esc_html( $package->period_start ); ?>
+								<?php if ( $package->period_end ) : ?>
+									&ndash; <?php echo esc_html( $package->period_end ); ?>
+								<?php endif; ?>
+							</td>
+							<td><?php echo esc_html( number_format( $remaining, 2 ) ); ?></td>
+							<td><?php echo esc_html( $statuses[ $package->status ] ?? $package->status ); ?></td>
+							<td>
+								<a class="kcrm-button" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=kcrmpkg_download_package_pdf&id=' . $package->id ), 'kcrmpkg_download_package_pdf_' . $package->id ) ); ?>">
+									<?php esc_html_e( 'Download PDF', 'karks-crm-packages' ); ?>
+								</a>
+							</td>
+						</tr>
+					<?php endforeach; ?>
+				</tbody>
+			</table>
+		</details>
 		<?php
 	}
 }

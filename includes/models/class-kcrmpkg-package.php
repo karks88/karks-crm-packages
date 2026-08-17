@@ -63,7 +63,7 @@ class KCRM_Pkg_Package extends KCRM_Model_Base {
 		$placeholders = implode( ', ', array_fill( 0, count( $customer_ids ), '%d' ) );
 		$sql          = 'SELECT * FROM %i WHERE customer_id IN (' . $placeholders . ') ORDER BY ' . self::safe_order_by( $order_by );
 
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- $placeholders is only repeated %d placeholder syntax (its count matches count( $customer_ids )), not user input; query text and args are passed to $wpdb->prepare() on this line.
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- $placeholders is only repeated %d placeholder syntax (its count matches count( $customer_ids )), not user input; query text and args are passed to $wpdb->prepare() on this line.
 		return $wpdb->get_results( $wpdb->prepare( $sql, array_merge( array( self::table() ), $customer_ids ) ) );
 	}
 

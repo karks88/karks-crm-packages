@@ -1,7 +1,13 @@
 === Karks CRM Packages ===
+Contributors: karkovack
+Tags: crm, invoicing, maintenance, hours, pdf
 Requires Plugins: karks-crm
 Requires at least: 6.5
+Tested up to: 7.0
 Requires PHP: 7.4
+Stable tag: 1.0.5
+License: GPLv3 or later
+License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
 Track maintenance-package hour allotments and usage for Karks CRM customers,
 with a client-shareable PDF usage report.
@@ -49,6 +55,9 @@ usage), never cached, matching Karks CRM's own precedent for balance-due
 calculations.
 
 == Changelog ==
+
+= 1.0.5 =
+* The front-end "Packages" tab now separates expired/cancelled packages out of the main summary into a collapsed "Package History" section, so old packages don't clutter the current view. Each history row still links to its PDF report. The tab's badge count now reflects active/exhausted (current) packages rather than active-only.
 
 = 1.0.4 =
 * The front-end "Packages" tab now shows a count badge for active packages, matching Karks CRM's own "Jobs" and "Invoices & Payments" tab badges.

@@ -108,7 +108,7 @@ class KCRM_Pkg_Activator {
 		);
 
 		if ( $exists ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared -- $table is our own fixed table-name helper, not user input; ALTER TABLE doesn't support placeholders for identifiers.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- $table is our own fixed table-name helper, not user input; ALTER TABLE doesn't support placeholders for identifiers, and this is a one-time schema migration, not a runtime query.
 			$wpdb->query( "ALTER TABLE `$table` DROP COLUMN `label`" );
 		}
 	}
