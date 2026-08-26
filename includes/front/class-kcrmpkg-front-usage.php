@@ -93,12 +93,14 @@ class KCRM_Pkg_Front_Usage {
 		wp_safe_redirect(
 			KCRM_Front::endpoint_url(
 				'customers',
-				array(
-					'view'               => 'edit',
-					'id'                 => $package->customer_id,
-					'tab'                => 'packages',
-					'kcrmpkg_package_id' => $package->id,
-					'kcrmpkg_notice'     => $notice,
+				KCRM_Front::nav_nonce_args(
+					array(
+						'view'               => 'edit',
+						'id'                 => $package->customer_id,
+						'tab'                => 'packages',
+						'kcrmpkg_package_id' => $package->id,
+						'kcrmpkg_notice'     => $notice,
+					)
 				)
 			)
 		);

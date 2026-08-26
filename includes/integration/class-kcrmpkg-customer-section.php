@@ -170,7 +170,7 @@ class KCRM_Pkg_Customer_Section {
 							</td>
 							<td><?php echo esc_html( $statuses[ $package->status ] ?? $package->status ); ?></td>
 							<?php if ( $is_front ) : ?>
-								<td><a href="<?php echo esc_url( KCRM_Front::endpoint_url( 'customers', array( 'view' => 'edit', 'id' => $customer->id, 'tab' => 'packages', 'kcrmpkg_package_id' => $package->id ) ) ); ?>#kcrmpkg-usage"><?php esc_html_e( 'Log Usage', 'karks-crm-packages' ); ?></a></td>
+								<td><a href="<?php echo esc_url( KCRM_Front::endpoint_url( 'customers', KCRM_Front::nav_nonce_args( array( 'view' => 'edit', 'id' => $customer->id, 'tab' => 'packages', 'kcrmpkg_package_id' => $package->id ) ) ) ); ?>#kcrmpkg-usage"><?php esc_html_e( 'Log Usage', 'karks-crm-packages' ); ?></a></td>
 							<?php endif; ?>
 						</tr>
 					<?php endforeach; ?>
@@ -231,7 +231,7 @@ class KCRM_Pkg_Customer_Section {
 			$package = $packages[0];
 		}
 
-		$screen_url = KCRM_Front::endpoint_url( 'customers', array( 'view' => 'edit', 'id' => $customer->id, 'tab' => 'packages' ) );
+		$screen_url = KCRM_Front::endpoint_url( 'customers', KCRM_Front::nav_nonce_args( array( 'view' => 'edit', 'id' => $customer->id, 'tab' => 'packages' ) ) );
 		$entries    = KCRM_Pkg_Usage::for_package( $package->id );
 		$service    = $package->service_id ? KCRM_Service::find( $package->service_id ) : null;
 		?>

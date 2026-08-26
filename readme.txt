@@ -1,11 +1,11 @@
 === Karks CRM Packages ===
-Contributors: karkovack
+Contributors: karks88
 Tags: crm, invoicing, maintenance, hours, pdf
 Requires Plugins: karks-crm
 Requires at least: 6.5
-Tested up to: 7.0
+Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.0.5
+Stable tag: 1.0.6
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -55,6 +55,10 @@ usage), never cached, matching Karks CRM's own precedent for balance-due
 calculations.
 
 == Changelog ==
+
+= 1.0.6 =
+* Fixed: logging or deleting package usage from the front-end customer profile, and the "Log Usage" link/package selector on that tab, could redirect back to a "Customer not found" page after Karks CRM's nonce hardening -- these links now carry the nav nonce Karks CRM 0.9.10.2 requires (via its new `KCRM_Front::nav_nonce_args()`). The usage entry itself was always saved correctly; only the redirect back was affected. Requires Karks CRM 0.9.10.2 or later.
+* Corrected "Tested up to" (7.0 -> 7.1).
 
 = 1.0.5 =
 * The front-end "Packages" tab now separates expired/cancelled packages out of the main summary into a collapsed "Package History" section, so old packages don't clutter the current view. Each history row still links to its PDF report. The tab's badge count now reflects active/exhausted (current) packages rather than active-only.
