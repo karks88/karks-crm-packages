@@ -5,7 +5,7 @@ Requires Plugins: karks-crm
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.0.6
+Stable tag: 1.0.7
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -55,6 +55,9 @@ usage), never cached, matching Karks CRM's own precedent for balance-due
 calculations.
 
 == Changelog ==
+
+= 1.0.7 =
+* Hardening: `GET` parameters read through `sanitize_key()` are now unslashed first, for Plugin Check compliance. No behavior change.
 
 = 1.0.6 =
 * Fixed: logging or deleting package usage from the front-end customer profile, and the "Log Usage" link/package selector on that tab, could redirect back to a "Customer not found" page after Karks CRM's nonce hardening -- these links now carry the nav nonce Karks CRM 0.9.10.2 requires (via its new `KCRM_Front::nav_nonce_args()`). The usage entry itself was always saved correctly; only the redirect back was affected. Requires Karks CRM 0.9.10.2 or later.

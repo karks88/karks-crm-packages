@@ -22,7 +22,7 @@ class KCRM_Pkg_Admin_Packages extends KCRM_Pkg_Controller_Base {
 		}
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only route dispatch; real nonce checks happen in the handler methods below.
-		$page = isset( $_GET['page'] ) ? sanitize_key( $_GET['page'] ) : '';
+		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
 		if ( self::PAGE !== $page ) {
 			return;
 		}
@@ -52,7 +52,7 @@ class KCRM_Pkg_Admin_Packages extends KCRM_Pkg_Controller_Base {
 
 	public function render() {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only view-routing param, no state change.
-		$view     = isset( $_GET['view'] ) ? sanitize_key( $_GET['view'] ) : 'list';
+		$view     = isset( $_GET['view'] ) ? sanitize_key( wp_unslash( $_GET['view'] ) ) : 'list';
 		$customer = $this->title_customer( $view );
 
 		echo '<div class="wrap kcrmpkg-wrap"><h1 class="wp-heading-inline">' . esc_html__( 'Packages', 'karks-crm-packages' );
