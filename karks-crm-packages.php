@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Karks CRM Packages
  * Description: Track maintenance-package hour allotments and usage for Karks CRM customers, with a client-shareable PDF usage report.
- * Version: 1.0.7
+ * Version: 1.0.8
  * Author: Eric Karkovack
  * Author URI: https://karks.com
  * Text Domain: karks-crm-packages
@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'KCRMPKG_VERSION', '1.0.7' );
+define( 'KCRMPKG_VERSION', '1.0.8' );
 define( 'KCRMPKG_DB_VERSION', '1.1.0' );
 define( 'KCRMPKG_PLUGIN_FILE', __FILE__ );
 define( 'KCRMPKG_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
@@ -64,6 +64,7 @@ function kcrmpkg_run() {
 	require_once KCRMPKG_PLUGIN_DIR . 'includes/front/class-kcrmpkg-front-usage.php';
 	require_once KCRMPKG_PLUGIN_DIR . 'includes/integration/class-kcrmpkg-customer-section.php';
 	require_once KCRMPKG_PLUGIN_DIR . 'includes/pdf/class-kcrmpkg-pdf.php';
+	require_once KCRMPKG_PLUGIN_DIR . 'includes/reports/class-kcrmpkg-report.php';
 
 	add_action( 'init', array( 'KCRM_Pkg_Activator', 'maybe_upgrade' ), 20 );
 	// Registering the callback here (inside this class_exists-guarded function) rather
@@ -89,6 +90,11 @@ function kcrmpkg_run() {
 
 	$front_usage = new KCRM_Pkg_Front_Usage();
 	add_action( 'template_redirect', array( $front_usage, 'handle_actions' ) );
+
+	// A no-op on karks-crm versions that predate the kcrm_reports_views filter.
+	$report = new KCRM_Pkg_Report();
+	add_filter( 'kcrm_reports_views', array( $report, 'register_view' ), 10, 2 );
+	add_action( 'admin_post_kcrmpkg_export_report_csv', array( $report, 'handle_csv_export' ) );
 }
 add_action( 'plugins_loaded', 'kcrmpkg_run' );
 

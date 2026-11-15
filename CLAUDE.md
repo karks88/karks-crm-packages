@@ -28,6 +28,8 @@ This plugin is intentionally kept shallow-coupled to karks-crm — its own DB ta
 - `KCRM_Front::is_crm_page()` / `KCRM_Front::endpoint_url()` — front-end route recognition/redirects.
 - `kcrm_customer_edit_after_sections` — wp-admin only now (see below); the customer screen there has no tabs.
 - `kcrm_customer_profile_tabs` — contributes the front-end "Packages" tab.
+- `kcrm_reports_views` — contributes the "Package Usage" report to the front-end Reports screen (see below).
+- `KCRM_Context`, `KCRM_Customer::find_many()`/`display_name()`, `KCRM_Front::nav_nonce_args()` — used by the report and the customer tab.
 
 It deliberately avoids `KCRM_Controller_Base`, `KCRM_Admin_Screen_Trait`, `KCRM_Invoice`, and `KCRM_Invoice_Item` — that layer changes more as karks-crm's own front-end evolves, so staying off it insulates this add-on. `KCRM_Pkg_Controller_Base` (`includes/controllers/`) reimplements the small subset of screen helpers (URL building, redirects, notices) it actually needs instead.
 
@@ -58,6 +60,10 @@ If you change usage add/delete behavior, update both `KCRM_Pkg_Admin_Packages` a
 ### PDF report
 
 `KCRM_Pkg_PDF::stream_package_report()` (`includes/pdf/`) mirrors karks-crm's own `KCRM_PDF::stream_invoice()`: renders `templates/package-usage-pdf.php` to an HTML string via `ob_start()`, then converts with `\Dompdf\Dompdf` loaded from karks-crm's Composer autoloader (dies with an explanatory message if Dompdf isn't present rather than fataling). The template reuses `KCRM_Colors::get()` and `KCRM_Company::pdf_accent_color()` so the report's color scheme matches karks-crm's invoice PDF exactly.
+
+### Package Usage report
+
+`KCRM_Pkg_Report` (`includes/reports/`) adds a report to karks-crm's front-end Reports screen (`/crm/reports/?view=packages`) through the `kcrm_reports_views` filter, plus a CSV export via `admin_post_kcrmpkg_export_report_csv`. It lists every package for the company with hours used, filtered by `?kcrmpkg_status=` (all/current/completed). Its private `rows()` method feeds both the screen and the CSV so they can't drift. Hours come from `KCRM_Pkg_Usage::hours_logged_for_packages()`, one grouped query that is still computed live. The averages leave out cancelled packages and 0-hour packages and don't cap overages. "Average" is the mean of each package's %, and "Overall" is total used ÷ total allotted. On a karks-crm version without the filter, the report simply doesn't appear.
 
 ### Security/validation conventions used throughout
 

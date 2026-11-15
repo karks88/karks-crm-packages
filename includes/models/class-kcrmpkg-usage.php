@@ -40,6 +40,35 @@ class KCRM_Pkg_Usage extends KCRM_Model_Base {
 		return (float) $wpdb->get_var( $wpdb->prepare( 'SELECT COALESCE(SUM(hours), 0) FROM %i WHERE package_id = %d', self::table(), $package_id ) );
 	}
 
+	/**
+	 * hours_logged() for many packages in one query (for the Package Usage
+	 * report, which would otherwise run one query per row). Still computed
+	 * live, not cached.
+	 *
+	 * @param int[] $package_ids
+	 * @return array package_id => hours logged (0.0 for packages with no entries).
+	 */
+	public static function hours_logged_for_packages( array $package_ids ) {
+		global $wpdb;
+
+		$package_ids = array_values( array_unique( array_filter( array_map( 'absint', $package_ids ) ) ) );
+		if ( empty( $package_ids ) ) {
+			return array();
+		}
+
+		$placeholders = implode( ', ', array_fill( 0, count( $package_ids ), '%d' ) );
+		$sql          = 'SELECT package_id, COALESCE(SUM(hours), 0) AS hours FROM %i WHERE package_id IN (' . $placeholders . ') GROUP BY package_id';
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- $placeholders is only repeated %d placeholder syntax (its count matches count( $package_ids )), not user input; query text and args are passed to $wpdb->prepare() on this line.
+		$results = $wpdb->get_results( $wpdb->prepare( $sql, array_merge( array( self::table() ), $package_ids ) ) );
+
+		$hours = array_fill_keys( $package_ids, 0.0 );
+		foreach ( $results as $row ) {
+			$hours[ (int) $row->package_id ] = (float) $row->hours;
+		}
+		return $hours;
+	}
+
 	/** Deletes every usage entry logged against a package (called when the package itself is deleted, so they don't become orphaned). */
 	public static function delete_for_package( $package_id ) {
 		global $wpdb;
