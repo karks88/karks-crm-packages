@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Karks CRM Packages
  * Description: Track maintenance-package hour allotments and usage for Karks CRM customers, with a client-shareable PDF usage report.
- * Version: 1.0.8
+ * Version: 1.0.9
  * Author: Eric Karkovack
  * Author URI: https://karks.com
  * Text Domain: karks-crm-packages
@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'KCRMPKG_VERSION', '1.0.8' );
+define( 'KCRMPKG_VERSION', '1.0.9' );
 define( 'KCRMPKG_DB_VERSION', '1.1.0' );
 define( 'KCRMPKG_PLUGIN_FILE', __FILE__ );
 define( 'KCRMPKG_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );

@@ -241,6 +241,19 @@ class KCRM_Pkg_Report {
 		return wp_nonce_url( $url, 'kcrmpkg_export_report_csv' );
 	}
 
+	/**
+	 * fputcsv() with every argument spelled out. PHP 8.4 deprecates leaving
+	 * $escape at its default. '' disables the non-standard backslash escape,
+	 * so quotes are only ever doubled (RFC 4180, which is what Excel and
+	 * Google Sheets expect). An empty $escape works back to PHP 7.4.
+	 *
+	 * @param resource $out
+	 * @param array    $fields
+	 */
+	private function put_csv( $out, array $fields ) {
+		fputcsv( $out, $fields, ',', '"', '' );
+	}
+
 	/** admin-post handler: streams the Package Usage report as a CSV download. */
 	public function handle_csv_export() {
 		if ( ! current_user_can( KCRM_CAPABILITY ) ) {
@@ -263,7 +276,7 @@ class KCRM_Pkg_Report {
 
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- streaming a CSV download to php://output, not a real file; WP_Filesystem has no equivalent.
 		$out = fopen( 'php://output', 'w' );
-		fputcsv(
+		$this->put_csv(
 			$out,
 			array(
 				__( 'Client', 'karks-crm-packages' ),
@@ -279,7 +292,7 @@ class KCRM_Pkg_Report {
 
 		foreach ( $rows as $row ) {
 			$package = $row['package'];
-			fputcsv(
+			$this->put_csv(
 				$out,
 				array(
 					$row['customer_name'],
@@ -294,9 +307,9 @@ class KCRM_Pkg_Report {
 			);
 		}
 
-		fputcsv( $out, array() );
-		fputcsv( $out, array( __( 'Average Usage per Package (%)', 'karks-crm-packages' ), null === $summary['average_pct'] ? '' : number_format( $summary['average_pct'], 1, '.', '' ) ) );
-		fputcsv( $out, array( __( 'Overall Usage (%)', 'karks-crm-packages' ), null === $summary['overall_pct'] ? '' : number_format( $summary['overall_pct'], 1, '.', '' ) ) );
+		$this->put_csv( $out, array() );
+		$this->put_csv( $out, array( __( 'Average Usage per Package (%)', 'karks-crm-packages' ), null === $summary['average_pct'] ? '' : number_format( $summary['average_pct'], 1, '.', '' ) ) );
+		$this->put_csv( $out, array( __( 'Overall Usage (%)', 'karks-crm-packages' ), null === $summary['overall_pct'] ? '' : number_format( $summary['overall_pct'], 1, '.', '' ) ) );
 
 		fclose( $out ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- closing the php://output stream handle opened above, not a real file.
 		exit;

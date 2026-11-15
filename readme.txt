@@ -5,7 +5,7 @@ Requires Plugins: karks-crm
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.0.7
+Stable tag: 1.0.9
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -55,6 +55,12 @@ usage), never cached, matching Karks CRM's own precedent for balance-due
 calculations.
 
 == Changelog ==
+
+= 1.0.9 =
+* Fixed a PHP 8.4 "fputcsv(): the $escape parameter must be provided" deprecation notice that was written into the Package Usage CSV export. The CSV now uses standard quote-doubling (RFC 4180) with no backslash escaping.
+
+= 1.0.8 =
+* Added a Package Usage report to the Karks CRM Reports screen. It lists every client package with its start and end dates and allotted vs. used hours, and shows the average and overall percentage of hours used. Includes a status filter (All / Current / Completed) and CSV export. Requires a Karks CRM version with the `kcrm_reports_views` filter.
 
 = 1.0.7 =
 * Hardening: `GET` parameters read through `sanitize_key()` are now unslashed first, for Plugin Check compliance. No behavior change.
