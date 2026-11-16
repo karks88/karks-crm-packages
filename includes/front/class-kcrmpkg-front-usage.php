@@ -47,9 +47,12 @@ class KCRM_Pkg_Front_Usage {
 			exit;
 		}
 
-		$hours = isset( $_POST['hours'] ) ? (float) $_POST['hours'] : 0;
+		// Term packages log notes only: hours is always 0 and the note itself is required.
+		$is_term     = KCRM_Pkg_Package::is_term( $package );
+		$hours       = ( ! $is_term && isset( $_POST['hours'] ) ) ? (float) $_POST['hours'] : 0;
+		$description = isset( $_POST['description'] ) ? sanitize_text_field( wp_unslash( $_POST['description'] ) ) : '';
 
-		if ( $hours <= 0 ) {
+		if ( $is_term ? '' === $description : $hours <= 0 ) {
 			$this->redirect_to_package( $package, 'error' );
 		}
 
@@ -58,12 +61,16 @@ class KCRM_Pkg_Front_Usage {
 				'package_id'  => $package_id,
 				'entry_date'  => isset( $_POST['entry_date'] ) ? sanitize_text_field( wp_unslash( $_POST['entry_date'] ) ) : gmdate( 'Y-m-d' ),
 				'hours'       => $hours,
-				'description' => isset( $_POST['description'] ) ? sanitize_text_field( wp_unslash( $_POST['description'] ) ) : '',
+				'description' => $description,
 			)
 		);
 
-		$remaining = round( (float) $package->allotted_hours - KCRM_Pkg_Usage::hours_logged( $package_id ), 2 );
-		$notice    = $remaining < 0 ? 'overage' : 'saved';
+		if ( $is_term ) {
+			$notice = 'noted';
+		} else {
+			$remaining = round( (float) $package->allotted_hours - KCRM_Pkg_Usage::hours_logged( $package_id ), 2 );
+			$notice    = $remaining < 0 ? 'overage' : 'saved';
+		}
 
 		$this->redirect_to_package( $package, $notice );
 	}

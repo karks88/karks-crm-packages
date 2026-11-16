@@ -58,6 +58,8 @@ class KCRM_Pkg_Activator {
 			company_id BIGINT UNSIGNED NOT NULL,
 			customer_id BIGINT UNSIGNED NOT NULL,
 			service_id BIGINT UNSIGNED NULL,
+			package_type VARCHAR(20) NOT NULL DEFAULT 'hours',
+			renewed_by_id BIGINT UNSIGNED NULL,
 			allotted_hours DECIMAL(8,2) NOT NULL DEFAULT 0,
 			price_paid DECIMAL(12,2) NOT NULL DEFAULT 0,
 			period_start DATE NOT NULL,

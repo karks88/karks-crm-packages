@@ -18,7 +18,8 @@ class KCRM_Pkg_PDF {
 		$service  = $package->service_id ? KCRM_Service::find( $package->service_id ) : null;
 		$dompdf   = self::render( $package, $service );
 		$filename = sanitize_file_name( $service ? $service->name : 'package-' . $package->id );
-		$dompdf->stream( $filename . '-usage-report.pdf', array( 'Attachment' => true ) );
+		$suffix   = KCRM_Pkg_Package::is_term( $package ) ? '-term-summary.pdf' : '-usage-report.pdf';
+		$dompdf->stream( $filename . $suffix, array( 'Attachment' => true ) );
 		exit;
 	}
 
@@ -37,6 +38,7 @@ class KCRM_Pkg_PDF {
 		$hours_used      = KCRM_Pkg_Usage::hours_logged( $package->id );
 		$hours_remaining = round( (float) $package->allotted_hours - $hours_used, 2 );
 		$logo_data       = KCRM_PDF::logo_data_uri( $company );
+		$is_term         = KCRM_Pkg_Package::is_term( $package );
 
 		ob_start();
 		include KCRMPKG_PLUGIN_DIR . 'templates/package-usage-pdf.php';

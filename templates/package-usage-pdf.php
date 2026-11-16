@@ -6,7 +6,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Package usage PDF template. Rendered inside KCRM_Pkg_PDF::render(), which
  * defines: $package, $service, $company, $customer, $usage_entries,
- * $hours_used, $hours_remaining, $logo_data.
+ * $hours_used, $hours_remaining, $logo_data, $is_term.
+ *
+ * Term packages (e.g. yearly hosting) get a "Service Term Summary" instead:
+ * notes without an Hours column, and term dates in place of hour totals.
  */
 
 $kcrmpkg_statuses = KCRM_Pkg_Package::statuses();
@@ -64,7 +67,7 @@ $kcrmpkg_accent    = $kcrmpkg_hex_or( KCRM_Company::pdf_accent_color( $company )
 				<?php endif; ?>
 			</td>
 			<td>
-				<div class="report-title"><?php esc_html_e( 'PACKAGE USAGE REPORT', 'karks-crm-packages' ); ?></div>
+				<div class="report-title"><?php echo $is_term ? esc_html__( 'SERVICE TERM SUMMARY', 'karks-crm-packages' ) : esc_html__( 'PACKAGE USAGE REPORT', 'karks-crm-packages' ); ?></div>
 				<div class="report-meta">
 					<div><strong><?php echo esc_html( $service ? $service->name : __( '(unknown service)', 'karks-crm-packages' ) ); ?></strong></div>
 					<div>
@@ -103,23 +106,51 @@ $kcrmpkg_accent    = $kcrmpkg_hex_or( KCRM_Company::pdf_accent_color( $company )
 		<tr>
 			<th><?php esc_html_e( 'Date', 'karks-crm-packages' ); ?></th>
 			<th><?php esc_html_e( 'Description', 'karks-crm-packages' ); ?></th>
-			<th class="text-right"><?php esc_html_e( 'Hours', 'karks-crm-packages' ); ?></th>
+			<?php if ( ! $is_term ) : ?>
+				<th class="text-right"><?php esc_html_e( 'Hours', 'karks-crm-packages' ); ?></th>
+			<?php endif; ?>
 		</tr>
 	</thead>
 	<tbody>
 		<?php if ( empty( $usage_entries ) ) : ?>
-			<tr><td colspan="3"><?php esc_html_e( 'No usage logged yet.', 'karks-crm-packages' ); ?></td></tr>
+			<tr><td colspan="3"><?php echo $is_term ? esc_html__( 'No notes yet.', 'karks-crm-packages' ) : esc_html__( 'No usage logged yet.', 'karks-crm-packages' ); ?></td></tr>
 		<?php endif; ?>
 		<?php foreach ( $usage_entries as $kcrmpkg_entry ) : ?>
 			<tr>
 				<td><?php echo esc_html( $kcrmpkg_entry->entry_date ); ?></td>
 				<td><?php echo esc_html( $kcrmpkg_entry->description ); ?></td>
-				<td class="text-right"><?php echo esc_html( number_format( (float) $kcrmpkg_entry->hours, 2 ) ); ?></td>
+				<?php if ( ! $is_term ) : ?>
+					<td class="text-right"><?php echo esc_html( number_format( (float) $kcrmpkg_entry->hours, 2 ) ); ?></td>
+				<?php endif; ?>
 			</tr>
 		<?php endforeach; ?>
 	</tbody>
 </table>
 
+<?php if ( $is_term ) : ?>
+<table class="totals">
+	<tr>
+		<td><?php esc_html_e( 'Term Start', 'karks-crm-packages' ); ?></td>
+		<td class="text-right"><?php echo esc_html( $package->period_start ); ?></td>
+	</tr>
+	<tr>
+		<td><?php esc_html_e( 'Term End', 'karks-crm-packages' ); ?></td>
+		<td class="text-right"><?php echo esc_html( $package->period_end ? $package->period_end : '—' ); ?></td>
+	</tr>
+	<tr class="total-row">
+		<td><?php esc_html_e( 'Status', 'karks-crm-packages' ); ?></td>
+		<td class="text-right">
+			<?php
+			echo esc_html(
+				! empty( $package->renewed_by_id )
+					? __( 'Renewed', 'karks-crm-packages' )
+					: ( $kcrmpkg_statuses[ $package->status ] ?? $package->status )
+			);
+			?>
+		</td>
+	</tr>
+</table>
+<?php else : ?>
 <table class="totals">
 	<tr>
 		<td><?php esc_html_e( 'Allotted Hours', 'karks-crm-packages' ); ?></td>
@@ -139,6 +170,7 @@ $kcrmpkg_accent    = $kcrmpkg_hex_or( KCRM_Company::pdf_accent_color( $company )
 		</td>
 	</tr>
 </table>
+<?php endif; ?>
 
 </body>
 </html>

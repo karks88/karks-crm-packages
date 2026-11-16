@@ -6,7 +6,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * "Package Usage" report on karks-crm's front-end Reports screen, contributed
  * via the `kcrm_reports_views` filter: every package for the current company
- * (client, service, period, allotted vs. used hours) plus the average share
+ * (client, service, period, allotted vs. used hours) -- hour-based packages
+ * only; term packages live in KCRM_Pkg_Renewals_Report -- plus the average share
  * of allotted hours clients actually use. CSV export is a separate
  * admin-post handler (handle_csv_export()), same split as karks-crm's own
  * reports.
@@ -69,7 +70,16 @@ class KCRM_Pkg_Report {
 			'completed' => array( KCRM_Pkg_Package::STATUS_EXPIRED ),
 		);
 
-		$packages = KCRM_Pkg_Package::for_company( $company_id, 'period_start DESC' );
+		// Hour-based packages only -- term packages (e.g. yearly hosting) have
+		// no allotment to measure and are covered by KCRM_Pkg_Renewals_Report.
+		$packages = array_values(
+			array_filter(
+				KCRM_Pkg_Package::for_company( $company_id, 'period_start DESC' ),
+				static function ( $package ) {
+					return ! KCRM_Pkg_Package::is_term( $package );
+				}
+			)
+		);
 		if ( isset( $groups[ $status_filter ] ) ) {
 			$packages = array_values(
 				array_filter(

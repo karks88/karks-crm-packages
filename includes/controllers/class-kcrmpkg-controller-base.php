@@ -39,6 +39,9 @@ abstract class KCRM_Pkg_Controller_Base {
 			'deleted' => array( 'success', __( 'Deleted successfully.', 'karks-crm-packages' ) ),
 			'error'   => array( 'error', __( 'Something went wrong. Please try again.', 'karks-crm-packages' ) ),
 			'overage' => array( 'warning', __( 'Usage logged. This package is now over its allotted hours.', 'karks-crm-packages' ) ),
+			'noted'   => array( 'success', __( 'Note added.', 'karks-crm-packages' ) ),
+			'renewed' => array( 'success', __( 'Package renewed. This is the new term.', 'karks-crm-packages' ) ),
+			'no_end'  => array( 'error', __( 'Term packages need a Period End date.', 'karks-crm-packages' ) ),
 		);
 
 		if ( isset( $messages[ $notice ] ) ) {
