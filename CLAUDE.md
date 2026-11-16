@@ -28,7 +28,8 @@ This plugin is intentionally kept shallow-coupled to karks-crm — its own DB ta
 - `KCRM_Front::is_crm_page()` / `KCRM_Front::endpoint_url()` — front-end route recognition/redirects.
 - `kcrm_customer_edit_after_sections` — wp-admin only now (see below); the customer screen there has no tabs.
 - `kcrm_customer_profile_tabs` — contributes the front-end "Packages" tab.
-- `kcrm_reports_views` — contributes the "Package Usage" report to the front-end Reports screen (see below).
+- `kcrm_reports_views` — contributes the "Package Usage" and "Upcoming Renewals" reports to the front-end Reports screen (see below).
+- `kcrm_company_export_data` / `kcrm_company_import_data` — include packages in karks-crm's company export/import and so in Karks CRM Backups (see "Export / backup" below).
 - `KCRM_Context`, `KCRM_Customer::find_many()`/`display_name()`, `KCRM_Front::nav_nonce_args()` — used by the report and the customer tab.
 - `KCRM_Customer::jobs_for()` and the customer row's `company_id`/`parent_customer_id` — the front-end package form's Client/Job choice and the scope check in `KCRM_Pkg_Front_Packages`.
 
@@ -71,6 +72,22 @@ Staff can manage packages and usage from two places, and the two code paths deli
 Both are rendered into karks-crm's customer-edit screen by `KCRM_Pkg_Customer_Section` (`includes/integration/`), which listens on two karks-crm extension points rather than one now that the front end has a tabbed customer profile: `render()` on `kcrm_customer_edit_after_sections` (wp-admin only, no-ops on the front end) gives wp-admin a read-only summary + a link to the full admin screen; `register_tab()` on `kcrm_customer_profile_tabs` contributes a whole "Packages" tab on the front end, which additionally renders the usage log and "Log Usage" form inline, the Add/Edit Package form (`?kcrmpkg_view=add|edit`), and Renew for term packages (also in Package History, since the expiry cron moves overdue terms there) (styled with karks-crm's own `.kcrm-front-table` / `.kcrm-front-form` classes), scoped to one selected package via `?kcrmpkg_package_id=`. The two entry points share a private `render_summary()` helper for the cards/table so that markup can't drift between them. Front-end links/redirects back into this tab always carry `&tab=packages` (e.g. `KCRM_Pkg_Front_Usage::redirect_to_package()`) so submitting the usage form or deleting an entry lands back on the right tab instead of defaulting to Home.
 
 If you change usage add/delete behavior, update both `KCRM_Pkg_Admin_Packages` and `KCRM_Pkg_Front_Usage` — they're independent implementations of the same logic, not a shared code path.
+
+### Export / backup
+
+`KCRM_Pkg_Backup_Bridge` (`includes/integration/`) follows the same pattern as karks-crm-customer-notes' `KCRM_Notes_Backup_Bridge`.
+
+- **Export** (`kcrm_company_export_data`): adds a `kcrmpkg` key containing `db_version` and `packages`. Each package has its usage nested inside, keyed by the original package/customer/service ids.
+- **Import** (`kcrm_company_import_data`):
+  - Remaps customer and service ids through core's id maps.
+  - Keeps the created/updated timestamps.
+  - Relinks `renewed_by_id` in a second pass, since a renewal can be imported after the package it renews.
+  - Skips rows whose client isn't in the file.
+  - Whitelists type and status, and forces hours to 0 for term packages.
+- **In-place restore with a `kcrmpkg` key** (`$target_company_id` set): replaces the company's packages and usage.
+- **In-place restore without the key** (an older backup): never deletes packages. Instead `relink_existing()` remaps the existing packages' `customer_id`/`service_id` through the same maps. Core has just recreated every customer and service with new ids, and a restore is same-site, so the file's old ids are this site's own.
+
+**When you add a column to either table, add it to both `export_packages()` and `import_packages()`.** Otherwise it's silently lost on every export/import/restore.
 
 ### PDF report
 

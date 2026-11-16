@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Karks CRM Packages
  * Description: Track maintenance-package hour allotments and term-based (e.g. yearly hosting) packages for Karks CRM customers, with a client-shareable PDF usage report.
- * Version: 1.1.0
+ * Version: 1.1.1
  * Author: Eric Karkovack
  * Author URI: https://karks.com
  * Text Domain: karks-crm-packages
@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'KCRMPKG_VERSION', '1.1.0' );
+define( 'KCRMPKG_VERSION', '1.1.1' );
 define( 'KCRMPKG_DB_VERSION', '1.2.0' );
 define( 'KCRMPKG_PLUGIN_FILE', __FILE__ );
 define( 'KCRMPKG_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
@@ -64,6 +64,7 @@ function kcrmpkg_run() {
 	require_once KCRMPKG_PLUGIN_DIR . 'includes/front/class-kcrmpkg-front-usage.php';
 	require_once KCRMPKG_PLUGIN_DIR . 'includes/front/class-kcrmpkg-front-packages.php';
 	require_once KCRMPKG_PLUGIN_DIR . 'includes/integration/class-kcrmpkg-customer-section.php';
+	require_once KCRMPKG_PLUGIN_DIR . 'includes/integration/class-kcrmpkg-backup-bridge.php';
 	require_once KCRMPKG_PLUGIN_DIR . 'includes/pdf/class-kcrmpkg-pdf.php';
 	require_once KCRMPKG_PLUGIN_DIR . 'includes/reports/class-kcrmpkg-report.php';
 	require_once KCRMPKG_PLUGIN_DIR . 'includes/reports/class-kcrmpkg-renewals-report.php';
@@ -89,6 +90,11 @@ function kcrmpkg_run() {
 	$customer_section = new KCRM_Pkg_Customer_Section();
 	add_action( 'kcrm_customer_edit_after_sections', array( $customer_section, 'render' ), 10, 2 );
 	add_filter( 'kcrm_customer_profile_tabs', array( $customer_section, 'register_tab' ), 10, 3 );
+
+	// Includes packages + usage in karks-crm's company export/import (and so in Karks CRM Backups).
+	// No-ops on karks-crm versions that predate these hooks.
+	add_filter( 'kcrm_company_export_data', array( 'KCRM_Pkg_Backup_Bridge', 'export_packages' ), 10, 2 );
+	add_action( 'kcrm_company_import_data', array( 'KCRM_Pkg_Backup_Bridge', 'import_packages' ), 10, 5 );
 
 	$front_usage = new KCRM_Pkg_Front_Usage();
 	add_action( 'template_redirect', array( $front_usage, 'handle_actions' ) );

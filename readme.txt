@@ -5,7 +5,7 @@ Requires Plugins: karks-crm
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.1.0
+Stable tag: 1.1.1
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -48,6 +48,7 @@ core, nothing else:
 * The `kcrm_customer_edit_after_sections` action -- renders the "Packages" summary box on the wp-admin customer edit screen (that screen has no tabs).
 * The `kcrm_customer_profile_tabs` filter -- contributes a "Packages" tab (summary, usage log, "Log Usage" form, Add/Edit Package form, and Renew) to the front-end `/crm/` customer profile screen.
 * The `kcrm_reports_views` filter -- contributes the "Package Usage" and "Upcoming Renewals" reports to the front-end Reports screen.
+* The `kcrm_company_export_data` filter and `kcrm_company_import_data` action -- so packages and their usage travel along with Karks CRM's own company export/import (and, through it, Karks CRM Backups).
 * `KCRM_Front::is_crm_page()`, `KCRM_Front::endpoint_url()` and `KCRM_Front::nav_nonce_args()` -- so the front-end usage and package submissions are recognized and redirect back to the right front-end customer URL, matching the front-end's own `.kcrm-front-table` / `.kcrm-front-form` styling.
 
 It deliberately does not touch `KCRM_Controller_Base`, `KCRM_Admin_Screen_Trait`,
@@ -66,6 +67,12 @@ Each package has a `package_type` (`hours` or `term`). Term packages link
 to the package that renewed them through `renewed_by_id`.
 
 == Changelog ==
+
+= 1.1.1 =
+* Packages are now included in Karks CRM's company export/import, and so in backups made by Karks CRM Backups. That covers every package (hours and term), its usage entries and notes, and renewal links. Before this, exports and backups left packages out entirely. Make a fresh export or backup after updating: older ones don't contain packages.
+* Importing as a new company recreates the packages against the new company's clients and services. Restoring a backup replaces the company's packages with the ones in the backup.
+* Restoring an older backup made before this version no longer breaks existing packages. The restore recreates every client and service with new IDs, so existing packages are now relinked to them instead of being left pointing at clients that no longer exist. A package for a client added after that backup was made can't be relinked, since the restore removes that client.
+* Requires a Karks CRM version with the `kcrm_company_export_data` / `kcrm_company_import_data` hooks (0.9.10.6 or later). On older versions, packages are simply left out of exports as before.
 
 = 1.1.0 =
 * Added term-based packages for things like yearly web hosting. On the package form, choose "Term" instead of "Hours". A term package is defined by its start and end dates (the end date is required) and has no allotted hours.
