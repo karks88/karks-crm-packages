@@ -532,6 +532,12 @@ class KCRM_Pkg_Admin_Packages extends KCRM_Pkg_Controller_Base {
 					onclick="return confirm('<?php echo esc_js( __( 'Create the next term for this package?', 'karks-crm-packages' ) ); ?>');">
 					<?php esc_html_e( 'Renew', 'karks-crm-packages' ); ?>
 				</a>
+				<?php if ( KCRM_Pkg_Invoice_Bridge::available() ) : ?>
+					<a class="button" href="<?php echo esc_url( wp_nonce_url( $this->screen_url( array( 'action' => 'renew', 'id' => $package->id, 'invoice' => 1 ) ), 'kcrmpkg_renew_package_' . $package->id ) ); ?>"
+						onclick="return confirm('<?php echo esc_js( __( 'Create the next term for this package and an Open invoice for it?', 'karks-crm-packages' ) ); ?>');">
+						<?php esc_html_e( 'Renew + Invoice', 'karks-crm-packages' ); ?>
+					</a>
+				<?php endif; ?>
 			<?php endif; ?>
 		</p>
 		<?php
@@ -549,6 +555,17 @@ class KCRM_Pkg_Admin_Packages extends KCRM_Pkg_Controller_Base {
 
 		if ( ! $new_id ) {
 			$this->redirect( array( 'view' => 'edit', 'id' => $id, 'kcrmpkg_notice' => 'error' ) );
+		}
+
+		// Only reached once renew() has claimed the old term, so a repeat click can't invoice twice.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- nonce already verified at the top of this method.
+		if ( ! empty( $_GET['invoice'] ) ) {
+			$invoice_id = KCRM_Pkg_Invoice_Bridge::create_for_term( KCRM_Pkg_Package::find( $new_id ) );
+			$this->redirect(
+				$invoice_id
+					? array( 'view' => 'edit', 'id' => $new_id, 'kcrmpkg_notice' => 'renewed_invoiced', 'kcrmpkg_invoice_id' => $invoice_id )
+					: array( 'view' => 'edit', 'id' => $new_id, 'kcrmpkg_notice' => 'renewed_no_invoice' )
+			);
 		}
 
 		$this->redirect( array( 'view' => 'edit', 'id' => $new_id, 'kcrmpkg_notice' => 'renewed' ) );

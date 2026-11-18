@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Karks CRM Packages
  * Description: Track maintenance-package hour allotments and term-based (e.g. yearly hosting) packages for Karks CRM customers, with a client-shareable PDF usage report.
- * Version: 1.1.1
+ * Version: 1.2.0
  * Author: Eric Karkovack
  * Author URI: https://karks.com
  * Text Domain: karks-crm-packages
@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'KCRMPKG_VERSION', '1.1.1' );
+define( 'KCRMPKG_VERSION', '1.2.0' );
 define( 'KCRMPKG_DB_VERSION', '1.2.0' );
 define( 'KCRMPKG_PLUGIN_FILE', __FILE__ );
 define( 'KCRMPKG_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
@@ -65,6 +65,7 @@ function kcrmpkg_run() {
 	require_once KCRMPKG_PLUGIN_DIR . 'includes/front/class-kcrmpkg-front-packages.php';
 	require_once KCRMPKG_PLUGIN_DIR . 'includes/integration/class-kcrmpkg-customer-section.php';
 	require_once KCRMPKG_PLUGIN_DIR . 'includes/integration/class-kcrmpkg-backup-bridge.php';
+	require_once KCRMPKG_PLUGIN_DIR . 'includes/integration/class-kcrmpkg-invoice-bridge.php';
 	require_once KCRMPKG_PLUGIN_DIR . 'includes/pdf/class-kcrmpkg-pdf.php';
 	require_once KCRMPKG_PLUGIN_DIR . 'includes/reports/class-kcrmpkg-report.php';
 	require_once KCRMPKG_PLUGIN_DIR . 'includes/reports/class-kcrmpkg-renewals-report.php';

@@ -42,9 +42,12 @@ abstract class KCRM_Pkg_Controller_Base {
 			'noted'   => array( 'success', __( 'Note added.', 'karks-crm-packages' ) ),
 			'renewed' => array( 'success', __( 'Package renewed. This is the new term.', 'karks-crm-packages' ) ),
 			'no_end'  => array( 'error', __( 'Term packages need a Period End date.', 'karks-crm-packages' ) ),
+			'renewed_no_invoice' => array( 'warning', __( 'Package renewed, but the invoice could not be created. Please create it by hand.', 'karks-crm-packages' ) ),
 		);
 
-		if ( isset( $messages[ $notice ] ) ) {
+		if ( 'renewed_invoiced' === $notice ) {
+			printf( '<div class="notice notice-success is-dismissible"><p>%s</p></div>', KCRM_Pkg_Invoice_Bridge::renewed_notice_html( false ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside renewed_notice_html().
+		} elseif ( isset( $messages[ $notice ] ) ) {
 			list( $type, $message ) = $messages[ $notice ];
 			printf( '<div class="notice notice-%s is-dismissible"><p>%s</p></div>', esc_attr( $type ), esc_html( $message ) );
 		}

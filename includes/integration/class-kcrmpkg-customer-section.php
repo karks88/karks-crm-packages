@@ -157,18 +157,36 @@ class KCRM_Pkg_Customer_Section {
 		);
 	}
 
-	/** Nonce-protected front-end Renew URL for a term package, handled by KCRM_Pkg_Front_Packages::renew(). */
-	private function front_renew_url( $customer, $package ) {
-		return wp_nonce_url(
-			$this->front_url(
-				$customer,
-				array(
-					'kcrmpkg_action'     => 'renew',
-					'kcrmpkg_package_id' => $package->id,
-				)
-			),
-			'kcrmpkg_renew_package_' . $package->id
+	/**
+	 * Nonce-protected front-end Renew URL for a term package, handled by
+	 * KCRM_Pkg_Front_Packages::renew(). With $invoice, it also creates an
+	 * invoice for the new term.
+	 */
+	private function front_renew_url( $customer, $package, $invoice = false ) {
+		$args = array(
+			'kcrmpkg_action'     => 'renew',
+			'kcrmpkg_package_id' => $package->id,
 		);
+		if ( $invoice ) {
+			$args['kcrmpkg_invoice'] = 1;
+		}
+		return wp_nonce_url( $this->front_url( $customer, $args ), 'kcrmpkg_renew_package_' . $package->id );
+	}
+
+	/** Renew + "Renew + Invoice" buttons for a renewable term package. */
+	private function render_front_renew_buttons( $customer, $package ) {
+		?>
+		<a class="kcrm-button kcrm-button-primary" href="<?php echo esc_url( $this->front_renew_url( $customer, $package ) ); ?>"
+			onclick="return confirm('<?php echo esc_js( __( 'Create the next term for this package?', 'karks-crm-packages' ) ); ?>');">
+			<span class="dashicons dashicons-update"></span> <?php esc_html_e( 'Renew', 'karks-crm-packages' ); ?>
+		</a>
+		<?php if ( KCRM_Pkg_Invoice_Bridge::available() ) : ?>
+			<a class="kcrm-button" href="<?php echo esc_url( $this->front_renew_url( $customer, $package, true ) ); ?>"
+				onclick="return confirm('<?php echo esc_js( __( 'Create the next term for this package and an Open invoice for it?', 'karks-crm-packages' ) ); ?>');">
+				<span class="dashicons dashicons-media-text"></span> <?php esc_html_e( 'Renew + Invoice', 'karks-crm-packages' ); ?>
+			</a>
+		<?php endif; ?>
+		<?php
 	}
 
 	/**
@@ -412,9 +430,12 @@ class KCRM_Pkg_Customer_Section {
 			'package_saved' => array( 'success', __( 'Package saved.', 'karks-crm-packages' ) ),
 			'renewed'       => array( 'success', __( 'Package renewed. This is the new term.', 'karks-crm-packages' ) ),
 			'no_end'        => array( 'error', __( 'Term packages need a Period End date.', 'karks-crm-packages' ) ),
+			'renewed_no_invoice' => array( 'warning', __( 'Package renewed, but the invoice could not be created. Please create it by hand.', 'karks-crm-packages' ) ),
 		);
 
-		if ( isset( $messages[ $notice ] ) ) {
+		if ( 'renewed_invoiced' === $notice ) {
+			printf( '<div class="notice notice-success is-dismissible"><p>%s</p></div>', KCRM_Pkg_Invoice_Bridge::renewed_notice_html( true ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside renewed_notice_html().
+		} elseif ( isset( $messages[ $notice ] ) ) {
 			list( $type, $message ) = $messages[ $notice ];
 			printf( '<div class="notice notice-%s is-dismissible"><p>%s</p></div>', esc_attr( $type ), esc_html( $message ) );
 		}
@@ -560,10 +581,7 @@ class KCRM_Pkg_Customer_Section {
 				<a href="<?php echo esc_url( $this->front_url( $customer, array( 'kcrmpkg_package_id' => $package->renewed_by_id ) ) ); ?>#kcrmpkg-usage"><?php esc_html_e( 'View next term', 'karks-crm-packages' ); ?> &rarr;</a>
 			<?php elseif ( KCRM_Pkg_Package::is_renewable( $package ) ) : ?>
 				<?php echo KCRM_Pkg_Package::renewal_badge_html( $package ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside renewal_badge_html(). ?>
-				<a class="kcrm-button kcrm-button-primary" href="<?php echo esc_url( $this->front_renew_url( $customer, $package ) ); ?>"
-					onclick="return confirm('<?php echo esc_js( __( 'Create the next term for this package?', 'karks-crm-packages' ) ); ?>');">
-					<span class="dashicons dashicons-update"></span> <?php esc_html_e( 'Renew', 'karks-crm-packages' ); ?>
-				</a>
+				<?php $this->render_front_renew_buttons( $customer, $package ); ?>
 			<?php endif; ?>
 		</p>
 		<?php
@@ -618,10 +636,7 @@ class KCRM_Pkg_Customer_Section {
 							</td>
 							<td>
 								<?php if ( KCRM_Pkg_Package::is_renewable( $package ) ) : ?>
-									<a class="kcrm-button kcrm-button-primary" href="<?php echo esc_url( $this->front_renew_url( $customer, $package ) ); ?>"
-										onclick="return confirm('<?php echo esc_js( __( 'Create the next term for this package?', 'karks-crm-packages' ) ); ?>');">
-										<?php esc_html_e( 'Renew', 'karks-crm-packages' ); ?>
-									</a>
+									<?php $this->render_front_renew_buttons( $customer, $package ); ?>
 								<?php endif; ?>
 								<a class="kcrm-button" href="<?php echo esc_url( $this->front_url( $customer, array( 'kcrmpkg_view' => 'edit', 'kcrmpkg_package_id' => $package->id ) ) ); ?>#kcrmpkg-packages">
 									<?php esc_html_e( 'Edit', 'karks-crm-packages' ); ?>

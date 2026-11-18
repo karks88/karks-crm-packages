@@ -33,7 +33,9 @@ This plugin is intentionally kept shallow-coupled to karks-crm — its own DB ta
 - `KCRM_Context`, `KCRM_Customer::find_many()`/`display_name()`, `KCRM_Front::nav_nonce_args()` — used by the report and the customer tab.
 - `KCRM_Customer::jobs_for()` and the customer row's `company_id`/`parent_customer_id` — the front-end package form's Client/Job choice and the scope check in `KCRM_Pkg_Front_Packages`.
 
-It deliberately avoids `KCRM_Controller_Base`, `KCRM_Admin_Screen_Trait`, `KCRM_Invoice`, and `KCRM_Invoice_Item` — that layer changes more as karks-crm's own front-end evolves, so staying off it insulates this add-on. `KCRM_Pkg_Controller_Base` (`includes/controllers/`) reimplements the small subset of screen helpers (URL building, redirects, notices) it actually needs instead.
+- `KCRM_Invoice` / `KCRM_Invoice_Item` / `KCRM_Company::next_invoice_number()`. Only `KCRM_Pkg_Invoice_Bridge` (`includes/integration/`) uses these, for "Renew + Invoice" (see below). Keep every invoice-layer call inside that class, and keep its `available()` guard current.
+
+It deliberately avoids `KCRM_Controller_Base` and `KCRM_Admin_Screen_Trait`, and keeps `KCRM_Invoice`/`KCRM_Invoice_Item` out of everything except the invoice bridge — that layer changes more as karks-crm's own front-end evolves, so staying off it insulates this add-on. `KCRM_Pkg_Controller_Base` (`includes/controllers/`) reimplements the small subset of screen helpers (URL building, redirects, notices) it actually needs instead.
 
 ### Boot sequence (`karks-crm-packages.php`)
 
@@ -56,6 +58,12 @@ Two tables (`{prefix}kcrmpkg_packages`, `{prefix}kcrmpkg_package_usage`), names 
 - use the usage table as a notes-only "Activity Log": entries are stored with `hours = 0`, and the description is required instead of hours. This rule lives in **both** `KCRM_Pkg_Admin_Packages::add_usage()` and `KCRM_Pkg_Front_Usage::add_usage()`.
 - are left out of hours totals (customer summary cards) and the Package Usage report.
 - are renewed by hand, never automatically, through `KCRM_Pkg_Package::renew()`. That's wp-admin `action=renew&id=`, or front-end `kcrmpkg_action=renew&kcrmpkg_package_id=`; both use nonce `kcrmpkg_renew_package_{id}`. It creates the next term with the same length, measured as a `DateInterval` so calendar months and years stay intact. It sets `renewed_by_id` on the old row through a conditional `UPDATE ... WHERE renewed_by_id IS NULL`, so a double-click can't create two renewals. The old row is otherwise left alone, and `expire_due()` archives it at its end date.
+- can be renewed with **Renew + Invoice**. That's the same renew URL and nonce plus `invoice=1` (wp-admin) or `kcrmpkg_invoice=1` (front end).
+  - Once `renew()` has succeeded, `KCRM_Pkg_Invoice_Bridge::create_for_term()` creates an Open invoice for the new term.
+  - Type, tax rate and line text are copied from the client's latest non-void invoice for that service. The fallback is "Other" + the service name, with the company's default tax rate.
+  - The issue date is the day before the term starts, never earlier than today. The invoice is due 14 days after that.
+  - A trailing "Expires: <date>" in the line text is rewritten to the day after `period_end`.
+  - Packages deliberately don't store an `invoice_id`. Core's import hook passes no invoice id map, so the link would break on restore.
 - get a "Renews in N days" / "Due for renewal" badge from `KCRM_Pkg_Package::renewal_badge_html()` (window `RENEWAL_WINDOW_DAYS`). Use that helper rather than re-implementing the badge.
 
 ### Admin vs. front-end: parallel, not shared

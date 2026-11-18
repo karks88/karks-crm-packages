@@ -4,7 +4,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Handles "Add/Edit Package" and "Renew" submissions from the front-end
+ * Handles "Add/Edit Package", "Renew" and "Renew + Invoice" submissions from the front-end
  * customer screen's Packages tab (KCRM_Pkg_Customer_Section), so staff can
  * manage packages without wp-admin access. Delete stays wp-admin-only, since
  * it also deletes the package's usage log.
@@ -103,6 +103,18 @@ class KCRM_Pkg_Front_Packages {
 		}
 
 		$new_id = KCRM_Pkg_Package::renew( $package );
+
+		// Only once renew() has claimed the old term, so a repeat click can't invoice twice.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- nonce already verified at the top of this method.
+		if ( $new_id && ! empty( $_GET['kcrmpkg_invoice'] ) ) {
+			$invoice_id = KCRM_Pkg_Invoice_Bridge::create_for_term( KCRM_Pkg_Package::find( $new_id ) );
+			$this->redirect(
+				$profile,
+				$invoice_id
+					? array( 'kcrmpkg_package_id' => $new_id, 'kcrmpkg_notice' => 'renewed_invoiced', 'kcrmpkg_invoice_id' => $invoice_id )
+					: array( 'kcrmpkg_package_id' => $new_id, 'kcrmpkg_notice' => 'renewed_no_invoice' )
+			);
+		}
 
 		$this->redirect(
 			$profile,
