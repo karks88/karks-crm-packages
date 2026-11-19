@@ -1,0 +1,27 @@
+{
+	"landingPage": "/wp-admin/admin.php?page=karks-crm-packages",
+	"preferredVersions": {
+		"php": "8.1",
+		"wp": "latest"
+	},
+	"phpExtensionBundles": [
+		"kitchen-sink"
+	],
+	"steps": [
+		{
+			"step": "installPlugin",
+			"pluginZipFile": { "resource": "wordpress.org/plugins", "slug": "karks-crm" },
+			"options": { "activate": true }
+		},
+		{
+			"step": "installPlugin",
+			"pluginZipFile": { "resource": "wordpress.org/plugins", "slug": "karks-crm-packages" },
+			"options": { "activate": true }
+		},
+		{ "step": "login", "username": "admin", "password": "password" },
+		{
+			"step": "runPHP",
+			"code": "<?php require_once '/wordpress/wp-load.php'; do_action( 'kcrm_run_demo_seeder' ); do_action( 'kcrmpkg_run_demo_seeder' ); ?>"
+		}
+	]
+}

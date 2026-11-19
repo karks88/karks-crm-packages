@@ -139,14 +139,6 @@ class KCRM_Pkg_Admin_Packages extends KCRM_Pkg_Controller_Base {
 			}
 		);
 		?>
-		<style>
-			/* Highlight the hovered package row; the whole row opens the package (see script below). */
-			.kcrmpkg-list tbody tr.kcrmpkg-row { cursor: pointer; }
-			.kcrmpkg-list tbody tr.kcrmpkg-row:hover,
-			.kcrmpkg-list tbody tr.kcrmpkg-row:focus-within { background-color: #f0f6fc; }
-			.kcrmpkg-list tbody tr.kcrmpkg-row:hover td:first-child,
-			.kcrmpkg-list tbody tr.kcrmpkg-row:focus-within td:first-child { box-shadow: inset 4px 0 0 #2271b1; }
-		</style>
 		<table class="wp-list-table widefat fixed striped kcrmpkg-list">
 			<thead>
 				<tr>
@@ -220,34 +212,6 @@ class KCRM_Pkg_Admin_Packages extends KCRM_Pkg_Controller_Base {
 				<?php endforeach; ?>
 			</tbody>
 		</table>
-		<script>
-			( function () {
-				// Clicking anywhere on a package row opens it, unless the click was on a link
-				// (Edit/Delete keep their own behavior) or the user is selecting text.
-				// Ctrl/Cmd/middle-click opens it in a new tab, like a normal link.
-				function open( event, row ) {
-					if ( event.target.closest( 'a, button, input, select, textarea' ) ) {
-						return;
-					}
-					if ( window.getSelection && String( window.getSelection() ).length ) {
-						return;
-					}
-					if ( event.ctrlKey || event.metaKey || 1 === event.button ) {
-						window.open( row.dataset.href, '_blank' );
-					} else {
-						window.location.href = row.dataset.href;
-					}
-				}
-				document.querySelectorAll( '.kcrmpkg-list tr.kcrmpkg-row' ).forEach( function ( row ) {
-					row.addEventListener( 'click', function ( event ) { open( event, row ); } );
-					row.addEventListener( 'auxclick', function ( event ) {
-						if ( 1 === event.button ) {
-							open( event, row );
-						}
-					} );
-				} );
-			} )();
-		</script>
 		<?php
 	}
 
@@ -296,7 +260,7 @@ class KCRM_Pkg_Admin_Packages extends KCRM_Pkg_Controller_Base {
 				</a>
 			</p>
 		<?php endif; ?>
-		<form method="post" action="<?php echo esc_url( $this->screen_url() ); ?>">
+		<form method="post" action="<?php echo esc_url( $this->screen_url() ); ?>" data-kcrmpkg-package-form>
 			<?php wp_nonce_field( 'kcrmpkg_save_package' ); ?>
 			<input type="hidden" name="kcrmpkg_action" value="save_package">
 			<input type="hidden" name="id" value="<?php echo esc_attr( $id ); ?>">
@@ -372,23 +336,6 @@ class KCRM_Pkg_Admin_Packages extends KCRM_Pkg_Controller_Base {
 			</table>
 			<?php submit_button( $id ? __( 'Update Package', 'karks-crm-packages' ) : __( 'Add Package', 'karks-crm-packages' ) ); ?>
 		</form>
-		<script>
-			( function () {
-				// Term packages have no hours: hide/unrequire Allotted Hours and require Period End instead. save() enforces the same rules server-side.
-				var type  = document.getElementById( 'package_type' );
-				var hours = document.getElementById( 'allotted_hours' );
-				var end   = document.getElementById( 'period_end' );
-				function sync() {
-					var isTerm = 'term' === type.value;
-					document.querySelectorAll( '.kcrmpkg-hours-row' ).forEach( function ( row ) { row.style.display = isTerm ? 'none' : ''; } );
-					document.querySelectorAll( '.kcrmpkg-term-only' ).forEach( function ( el ) { el.style.display = isTerm ? '' : 'none'; } );
-					hours.required = ! isTerm;
-					end.required   = isTerm;
-				}
-				type.addEventListener( 'change', sync );
-				sync();
-			} )();
-		</script>
 
 		<?php if ( $package ) : ?>
 			<?php $this->render_usage_section( $package ); ?>

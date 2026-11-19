@@ -1,0 +1,6 @@
+/* wp-admin package list: highlight the hovered row; the whole row opens the package (see assets/js/kcrmpkg.js). */
+.kcrmpkg-list tbody tr.kcrmpkg-row { cursor: pointer; }
+.kcrmpkg-list tbody tr.kcrmpkg-row:hover,
+.kcrmpkg-list tbody tr.kcrmpkg-row:focus-within { background-color: #f0f6fc; }
+.kcrmpkg-list tbody tr.kcrmpkg-row:hover td:first-child,
+.kcrmpkg-list tbody tr.kcrmpkg-row:focus-within td:first-child { box-shadow: inset 4px 0 0 #2271b1; }

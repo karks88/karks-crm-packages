@@ -1,8 +1,9 @@
 <?php
 /**
  * Plugin Name: Karks CRM Packages
+ * Plugin URI: https://karks-crm.com
  * Description: Track maintenance-package hour allotments and term-based (e.g. yearly hosting) packages for Karks CRM customers, with a client-shareable PDF usage report.
- * Version: 1.2.0
+ * Version: 1.2.1
  * Author: Eric Karkovack
  * Author URI: https://karks.com
  * Text Domain: karks-crm-packages
@@ -17,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'KCRMPKG_VERSION', '1.2.0' );
+define( 'KCRMPKG_VERSION', '1.2.1' );
 define( 'KCRMPKG_DB_VERSION', '1.2.0' );
 define( 'KCRMPKG_PLUGIN_FILE', __FILE__ );
 define( 'KCRMPKG_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
@@ -60,6 +61,8 @@ function kcrmpkg_run() {
 	require_once KCRMPKG_PLUGIN_DIR . 'includes/models/class-kcrmpkg-package.php';
 	require_once KCRMPKG_PLUGIN_DIR . 'includes/models/class-kcrmpkg-usage.php';
 	require_once KCRMPKG_PLUGIN_DIR . 'includes/controllers/class-kcrmpkg-controller-base.php';
+	require_once KCRMPKG_PLUGIN_DIR . 'includes/class-kcrmpkg-assets.php';
+	require_once KCRMPKG_PLUGIN_DIR . 'includes/class-kcrmpkg-demo-seeder.php';
 	require_once KCRMPKG_PLUGIN_DIR . 'includes/admin/class-kcrmpkg-admin-packages.php';
 	require_once KCRMPKG_PLUGIN_DIR . 'includes/front/class-kcrmpkg-front-usage.php';
 	require_once KCRMPKG_PLUGIN_DIR . 'includes/front/class-kcrmpkg-front-packages.php';
@@ -76,6 +79,12 @@ function kcrmpkg_run() {
 	// still fires on schedule but has nothing hooked to it -- a harmless no-op, same
 	// graceful-degrade behavior as the rest of this plugin.
 	add_action( KCRM_Pkg_Activator::EXPIRE_CRON_HOOK, array( 'KCRM_Pkg_Package', 'expire_due' ) );
+
+	add_action( 'admin_enqueue_scripts', array( 'KCRM_Pkg_Assets', 'enqueue_admin' ) );
+	add_action( 'wp_enqueue_scripts', array( 'KCRM_Pkg_Assets', 'enqueue_front' ) );
+
+	// Fired only by the WordPress.org Live Preview blueprint, after karks-crm's own demo seeder.
+	add_action( 'kcrmpkg_run_demo_seeder', array( 'KCRM_Pkg_Demo_Seeder', 'maybe_seed' ) );
 
 	$admin_packages = new KCRM_Pkg_Admin_Packages();
 	// Priority 20: add_submenu_page() needs karks-crm's own add_menu_page('karks-crm', ...)

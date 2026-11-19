@@ -209,7 +209,7 @@ class KCRM_Pkg_Customer_Section {
 		$cancel   = $this->front_url( $customer, $package ? array( 'kcrmpkg_package_id' => $package->id ) : array() ) . '#kcrmpkg-packages';
 		?>
 		<h4><?php echo $package ? esc_html__( 'Edit Package', 'karks-crm-packages' ) : esc_html__( 'Add Package', 'karks-crm-packages' ); ?></h4>
-		<form method="post" action="<?php echo esc_url( $this->front_url( $customer ) ); ?>" class="kcrm-front-form" id="kcrmpkg-package-form">
+		<form method="post" action="<?php echo esc_url( $this->front_url( $customer ) ); ?>" class="kcrm-front-form" id="kcrmpkg-package-form" data-kcrmpkg-package-form>
 			<?php wp_nonce_field( 'kcrmpkg_front_save_package' ); ?>
 			<input type="hidden" name="kcrmpkg_action" value="save_package">
 			<input type="hidden" name="kcrmpkg_profile_id" value="<?php echo esc_attr( $customer->id ); ?>">
@@ -279,24 +279,6 @@ class KCRM_Pkg_Customer_Section {
 				<a class="kcrm-button" href="<?php echo esc_url( $cancel ); ?>"><?php esc_html_e( 'Cancel', 'karks-crm-packages' ); ?></a>
 			</p>
 		</form>
-		<script>
-			( function () {
-				// Term packages have no hours: hide/unrequire Allotted Hours and require Period End instead. data_from_form() enforces the same rules server-side.
-				var form  = document.getElementById( 'kcrmpkg-package-form' );
-				var type  = document.getElementById( 'kcrmpkg_package_type' );
-				var hours = document.getElementById( 'kcrmpkg_allotted_hours' );
-				var end   = document.getElementById( 'kcrmpkg_period_end' );
-				function sync() {
-					var isTerm = 'term' === type.value;
-					form.querySelectorAll( '.kcrmpkg-hours-row' ).forEach( function ( row ) { row.style.display = isTerm ? 'none' : ''; } );
-					form.querySelectorAll( '.kcrmpkg-term-only' ).forEach( function ( el ) { el.style.display = isTerm ? '' : 'none'; } );
-					hours.required = ! isTerm;
-					end.required   = isTerm;
-				}
-				type.addEventListener( 'change', sync );
-				sync();
-			} )();
-		</script>
 		<?php
 	}
 

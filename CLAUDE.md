@@ -10,7 +10,17 @@ There is no build system, package manager, or test suite in this repo (no `compo
 
 ## Release process
 
-Pushing a tag matching `v*` triggers `.github/workflows/release.yml`, which stages the repo (respecting `.distignore`) into a `karks-crm-packages/` folder and zips it, so the release asset's top-level folder name is stable across versions (unlike GitHub's auto-generated source zip, which would break in-place updates via wp-admin). Bump `Version:` in `karks-crm-packages.php` and `KCRMPKG_VERSION` together before tagging.
+Pushing a tag matching `v*` triggers `.github/workflows/release.yml`, which stages the repo (respecting `.distignore`) into a `karks-crm-packages/` folder and zips it, so the release asset's top-level folder name is stable across versions (unlike GitHub's auto-generated source zip, which would break in-place updates via wp-admin). Bump `Version:` in `karks-crm-packages.php`, `KCRMPKG_VERSION` and the readme's `Stable tag` together before tagging; Plugin Check errors on a Stable tag mismatch.
+
+The same tag also triggers `.github/workflows/deploy-wporg.yml`, which pushes to WordPress.org SVN (slug `karks-crm-packages`) with `.wordpress-org/` as the listing assets. That needs the `SVN_USERNAME`/`SVN_PASSWORD` repo secrets, which only exist once WordPress.org has approved the plugin. Until then, that job fails and the GitHub release is unaffected.
+
+WordPress.org reviewers expect:
+- **No inline `<script>`/`<style>` in PHP.** Add JS to `assets/js/kcrmpkg.js` and wp-admin CSS to `assets/css/admin.css`. `KCRM_Pkg_Assets` (`includes/class-kcrmpkg-assets.php`) enqueues them only on the Packages admin page and on `KCRM_Front::is_crm_page()`. Each JS behavior guards on its own markup. The package form toggle runs on any `form[data-kcrmpkg-package-form]`, so keep that attribute on both form templates.
+- **A user-facing `readme.txt`.** Keep developer detail here in CLAUDE.md. The PDF template's `<style>` is fine, since it's Dompdf input, not a page.
+
+Run Plugin Check with Local's WP-CLI: `wp plugin check karks-crm-packages`. The hidden-file, `.github` and CLAUDE.md warnings come only from the dev checkout, because `.distignore` excludes those files.
+
+**Live Preview.** `.wordpress-org/blueprints/blueprint.json` installs both plugins from WordPress.org. It then fires karks-crm's `kcrm_run_demo_seeder` and this plugin's `kcrmpkg_run_demo_seeder`. `KCRM_Pkg_Demo_Seeder` (`includes/class-kcrmpkg-demo-seeder.php`) adds sample packages to karks-crm's "Riverside Web Studio" demo company. It no-ops if that company is missing or already has packages. It's the one place the add-on creates a karks-crm row (a "Web Hosting" service). Nothing on a real install fires it.
 
 ## Architecture
 
@@ -70,7 +80,7 @@ Two tables (`{prefix}kcrmpkg_packages`, `{prefix}kcrmpkg_package_usage`), names 
 
 Staff can manage packages and usage from two places, and the two code paths deliberately mirror rather than share implementation:
 
-- `KCRM_Pkg_Admin_Packages` (`includes/admin/`) — full CRUD (packages + usage) in wp-admin, under the `karks-crm-packages` page slug. Handles its own routing (`?page=karks-crm-packages&view=...`) via `admin_init`. A client-scoped list (`&customer_id=`) carries the client into "Add Package". List rows (`tr.kcrmpkg-row`) highlight on hover and open the package on click using their `data-href`; that's an inline style and script in `render_list()`, which ignores clicks on links. Keep `data-href` on any new row markup.
+- `KCRM_Pkg_Admin_Packages` (`includes/admin/`) — full CRUD (packages + usage) in wp-admin, under the `karks-crm-packages` page slug. Handles its own routing (`?page=karks-crm-packages&view=...`) via `admin_init`. A client-scoped list (`&customer_id=`) carries the client into "Add Package". List rows (`tr.kcrmpkg-row`) highlight on hover and open the package on click using their `data-href`; that's `assets/css/admin.css` and `assets/js/kcrmpkg.js`, which ignores clicks on links. Keep `data-href` on any new row markup.
 - `KCRM_Pkg_Front_Usage` (`includes/front/`) — usage log/delete from the front-end `/crm/` customer screen, via `template_redirect`.
 - `KCRM_Pkg_Front_Packages` (`includes/front/`) — package create/edit/renew from that same screen, via `template_redirect`. Delete stays wp-admin-only because it also deletes the usage log. It only lets a package be saved for the profile's client or one of its Jobs, within the current company. It reads `kcrmpkg_profile_id` and checks `company_id`/`parent_customer_id`; keep that check when changing it.
 - Both front handlers use their own `kcrmpkg_`-prefixed query args (`kcrmpkg_action`, `kcrmpkg_usage_id`, `kcrmpkg_package_id`, `kcrmpkg_view`) rather than the admin screen's `action`/`id`/`usage_id`, specifically so they can't collide with karks-crm's own `action=delete&id=` handling on that same customer-endpoint URL.
