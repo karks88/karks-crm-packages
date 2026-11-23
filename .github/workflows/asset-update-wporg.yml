@@ -1,0 +1,23 @@
+name: Update WordPress.org assets/readme
+
+# Pushes only the listing assets (.wordpress-org/ -> SVN assets/) and
+# readme.txt to WordPress.org, without tagging a new version. Use it for
+# screenshot/banner/icon changes or readme-only edits between releases.
+# Manual-only, so nothing reaches WordPress.org without a deliberate run.
+on:
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: WordPress.org plugin asset/readme update
+        uses: 10up/action-wordpress-plugin-asset-update@stable
+        env:
+          SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+          SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+          SLUG: karks-crm-packages
+          ASSETS_DIR: .wordpress-org
