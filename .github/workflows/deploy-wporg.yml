@@ -23,10 +23,20 @@ jobs:
         with:
           ref: ${{ github.event.inputs.tag || github.ref }}
 
+      # The action derives VERSION from GITHUB_REF, which on workflow_dispatch
+      # is the branch (refs/heads/main), not the tag being deployed. Resolve
+      # it from the tag explicitly so both triggers produce e.g. "1.2.1".
+      - name: Resolve version
+        id: version
+        env:
+          TAG: ${{ github.event.inputs.tag || github.ref_name }}
+        run: echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+
       - name: WordPress Plugin Deploy
         uses: 10up/action-wordpress-plugin-deploy@stable
         env:
           SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
           SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
           SLUG: karks-crm-packages
+          VERSION: ${{ steps.version.outputs.version }}
           ASSETS_DIR: .wordpress-org
