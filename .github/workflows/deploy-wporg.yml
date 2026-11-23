@@ -32,6 +32,33 @@ jobs:
           TAG: ${{ github.event.inputs.tag || github.ref_name }}
         run: echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
 
+      # SVN only reports "Authentication failed" at the final commit, so catch
+      # missing or mis-pasted secrets up front. Prints lengths, never values.
+      - name: Check SVN credentials
+        env:
+          SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+          SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+        run: |
+          ok=1
+          for name in SVN_USERNAME SVN_PASSWORD; do
+            value="${!name}"
+            if [ -z "$value" ]; then
+              echo "::error::$name is empty or not visible to this workflow (must be a repository Actions secret)."
+              ok=0
+              continue
+            fi
+            echo "$name is set (${#value} characters)."
+            if [[ "$value" =~ [[:space:]] ]]; then
+              echo "::error::$name contains whitespace or a newline; re-paste it."
+              ok=0
+            fi
+          done
+          if [[ "$SVN_USERNAME" == *@* ]]; then
+            echo "::error::SVN_USERNAME looks like an email; use your WordPress.org username."
+            ok=0
+          fi
+          [ "$ok" = 1 ]
+
       - name: WordPress Plugin Deploy
         uses: 10up/action-wordpress-plugin-deploy@stable
         env:
