@@ -21,3 +21,34 @@ jobs:
           SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
           SLUG: karks-crm-packages
           ASSETS_DIR: .wordpress-org
+
+      # Unlike the release deploy action, the asset-update action doesn't set
+      # svn:mime-type, and WordPress.org won't display images served as
+      # application/octet-stream. Set it on any asset image that lacks it.
+      - name: Set image MIME types on SVN assets
+        env:
+          SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+          SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+          SLUG: karks-crm-packages
+        run: |
+          command -v svn >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq subversion; }
+          svn checkout --depth files "https://plugins.svn.wordpress.org/$SLUG/assets" "$RUNNER_TEMP/assets"
+          cd "$RUNNER_TEMP/assets"
+          shopt -s nullglob nocaseglob
+          for f in *.png *.jpg *.jpeg *.gif *.svg; do
+            case "${f,,}" in
+              *.png) type=image/png ;;
+              *.jpg|*.jpeg) type=image/jpeg ;;
+              *.gif) type=image/gif ;;
+              *.svg) type=image/svg+xml ;;
+            esac
+            if [ "$(svn propget svn:mime-type "$f")" != "$type" ]; then
+              svn propset svn:mime-type "$type" "$f"
+            fi
+          done
+          if [ -n "$(svn status)" ]; then
+            svn commit -m "Set image MIME types on assets" --no-auth-cache --non-interactive \
+              --username "$SVN_USERNAME" --password "$SVN_PASSWORD"
+          else
+            echo "All asset images already have the right MIME type."
+          fi
